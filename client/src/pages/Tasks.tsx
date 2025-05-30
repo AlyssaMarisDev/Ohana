@@ -6,6 +6,7 @@ import { Plus, CheckSquare, Circle, Filter } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import BottomNavigation from "@/components/BottomNavigation";
 import CreateTaskModal from "@/components/CreateTaskModal";
+import EditTaskModal from "@/components/EditTaskModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,6 +22,7 @@ export default function Tasks() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showCreateTask, setShowCreateTask] = useState(false);
+  const [editingTask, setEditingTask] = useState<TodoWithDetails | null>(null);
   const [currentHouseholdId, setCurrentHouseholdId] = useState<number | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
 
@@ -178,13 +180,14 @@ export default function Tasks() {
                   {filteredTodos.map((todo) => (
                     <div
                       key={todo.id}
-                      className={`flex items-start space-x-3 p-3 border rounded-lg transition-colors ${
+                      className={`flex items-start space-x-3 p-3 border rounded-lg transition-colors cursor-pointer ${
                         todo.completed 
                           ? "bg-gray-50 border-gray-200" 
                           : "bg-white border-gray-200 hover:border-gray-300"
                       }`}
+                      onClick={() => setEditingTask(todo)}
                     >
-                      <div className="flex-shrink-0 mt-1">
+                      <div className="flex-shrink-0 mt-1" onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                           checked={todo.completed}
                           onCheckedChange={() => handleToggleTodo(todo.id)}
@@ -271,8 +274,19 @@ export default function Tasks() {
       <CreateTaskModal 
         open={showCreateTask} 
         onOpenChange={setShowCreateTask}
-        currentHousehold={currentHousehold}
+        currentHousehold={currentHousehold || null}
       />
+
+      {editingTask && (
+        <EditTaskModal
+          open={!!editingTask}
+          onOpenChange={(open) => {
+            if (!open) setEditingTask(null);
+          }}
+          task={editingTask}
+          currentHousehold={currentHousehold || null}
+        />
+      )}
     </div>
   );
 }
