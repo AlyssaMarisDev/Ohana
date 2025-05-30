@@ -95,10 +95,10 @@ export default function CreateTaskModal({
   // Update household when households data changes or currentHousehold changes
   useEffect(() => {
     const defaultHousehold = getDefaultHousehold();
-    if (defaultHousehold) {
+    if (defaultHousehold && defaultHousehold !== form.getValues("householdId")) {
       form.setValue("householdId", defaultHousehold);
     }
-  }, [households, currentHousehold, getDefaultHousehold]);
+  }, [households, currentHousehold]);
 
   const createTaskMutation = useMutation({
     mutationFn: (data: FormData) => {

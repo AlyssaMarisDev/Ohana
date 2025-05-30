@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-reac
 import AppHeader from "@/components/AppHeader";
 import BottomNavigation from "@/components/BottomNavigation";
 import CreateEventModal from "@/components/CreateEventModal";
+import EditEventModal from "@/components/EditEventModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,6 +16,7 @@ export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<EventWithDetails | null>(null);
   const [currentHouseholdId, setCurrentHouseholdId] = useState<number | null>(null);
 
   // Fetch user's households
@@ -184,7 +186,11 @@ export default function Calendar() {
               ) : selectedDateEvents.length > 0 ? (
                 <div className="space-y-3">
                   {selectedDateEvents.map((event) => (
-                    <div key={event.id} className="flex items-start space-x-3 p-3 border border-gray-100 rounded-lg">
+                    <div 
+                      key={event.id} 
+                      className="flex items-start space-x-3 p-3 border border-gray-100 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => setEditingEvent(event)}
+                    >
                       <div className="w-1 h-12 bg-primary rounded-full"></div>
                       <div className="flex-1">
                         <h3 className="font-medium text-gray-900">{event.title}</h3>
@@ -234,9 +240,20 @@ export default function Calendar() {
       <CreateEventModal 
         open={showCreateEvent} 
         onOpenChange={setShowCreateEvent}
-        currentHousehold={currentHousehold}
+        currentHousehold={currentHousehold || null}
         defaultDate={selectedDate}
       />
+
+      {editingEvent && (
+        <EditEventModal
+          open={!!editingEvent}
+          onOpenChange={(open) => {
+            if (!open) setEditingEvent(null);
+          }}
+          event={editingEvent}
+          currentHousehold={currentHousehold || null}
+        />
+      )}
     </div>
   );
 }
