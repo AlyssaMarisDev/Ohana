@@ -243,24 +243,46 @@ export default function Calendar() {
                       <div className="w-1 h-12 bg-primary rounded-full"></div>
                       <div className="flex-1">
                         <h3 className="font-medium text-gray-900">{event.title}</h3>
-                        <p className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-600">
                           {(() => {
                             const startTime = new Date(event.startTime);
                             const endTime = new Date(event.endTime);
                             const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
+                            const startDateStr = format(startTime, "yyyy-MM-dd");
                             const endDateStr = format(endTime, "yyyy-MM-dd");
                             
                             const startTimeFormatted = format(startTime, "h:mm a");
                             const endTimeFormatted = format(endTime, "h:mm a");
                             
-                            // If end time is on a different day than selected date, show the date
-                            if (selectedDateStr !== endDateStr) {
-                              return `${startTimeFormatted} - ${format(endTime, "MMM d")} ${endTimeFormatted}`;
+                            // Helper function to get relative date label
+                            const getRelativeDate = (dateStr, referenceStr) => {
+                              const date = new Date(dateStr);
+                              const reference = new Date(referenceStr);
+                              const diffDays = Math.round((date - reference) / (1000 * 60 * 60 * 24));
+                              
+                              if (diffDays === 0) return "Today";
+                              if (diffDays === 1) return "Tomorrow";
+                              if (diffDays === -1) return "Yesterday";
+                              return format(date, "MMM d");
+                            };
+                            
+                            // If it's a multi-day event, show start and end on separate lines
+                            if (startDateStr !== endDateStr) {
+                              const startLabel = getRelativeDate(startDateStr, selectedDateStr);
+                              const endLabel = getRelativeDate(endDateStr, selectedDateStr);
+                              
+                              return (
+                                <div>
+                                  <div>Start: {startLabel} {startTimeFormatted}</div>
+                                  <div>End: {endLabel} {endTimeFormatted}</div>
+                                </div>
+                              );
                             }
                             
+                            // Single day event
                             return `${startTimeFormatted} - ${endTimeFormatted}`;
                           })()}
-                        </p>
+                        </div>
                         {event.description && (
                           <p className="text-sm text-gray-500 mt-1">{event.description}</p>
                         )}
