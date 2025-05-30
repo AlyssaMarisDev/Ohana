@@ -376,14 +376,14 @@ export default function EditEventModal({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Assign To</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ""}>
+                  <Select onValueChange={(value) => field.onChange(value === "unassigned" ? null : value)} value={field.value || "unassigned"}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select person (optional)" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
                       {currentHousehold?.memberships.map((membership) => (
                         <SelectItem key={membership.user.id} value={membership.user.id}>
                           {membership.user.firstName || membership.user.email}
