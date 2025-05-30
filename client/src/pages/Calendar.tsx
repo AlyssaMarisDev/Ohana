@@ -39,10 +39,43 @@ export default function Calendar() {
     enabled: !!currentHousehold,
   });
 
+  // Fetch Google Calendar events
+  const { data: googleEvents, isLoading: googleEventsLoading } = useQuery<any[]>({
+    queryKey: ["/api/google/events", { 
+      startDate: format(monthStart, "yyyy-MM-dd"),
+      endDate: format(monthEnd, "yyyy-MM-dd")
+    }],
+    enabled: true,
+  });
+
+  // Convert Google Calendar events to our format and combine with app events
+  const convertedGoogleEvents = googleEvents?.map(event => ({
+    id: `google-${event.id}`,
+    title: event.summary || 'Untitled Event',
+    description: event.description || '',
+    startTime: new Date(event.start?.dateTime || event.start?.date),
+    endTime: new Date(event.end?.dateTime || event.end?.date),
+    category: null,
+    tags: null,
+    createdAt: null,
+    updatedAt: null,
+    createdBy: 'google',
+    householdId: null,
+    assignedTo: null,
+    visibility: 'public',
+    creator: { id: 'google', firstName: 'Google', lastName: 'Calendar', email: null, profileImageUrl: null, createdAt: null, updatedAt: null, googleAccessToken: null, googleRefreshToken: null, googleCalendarSyncEnabled: null },
+    assignee: undefined,
+    household: undefined,
+    source: 'google'
+  })) || [];
+
+  // Combine app events and Google Calendar events
+  const allEvents = [...(events || []), ...convertedGoogleEvents];
+
   // Get events for selected date
-  const selectedDateEvents = events?.filter(event => 
+  const selectedDateEvents = allEvents.filter(event => 
     isSameDay(new Date(event.startTime), selectedDate)
-  ) || [];
+  );
 
   const previousMonth = () => {
     const newDate = new Date(currentDate);
@@ -72,7 +105,7 @@ export default function Calendar() {
   };
 
   const hasEventsOnDay = (day: Date) => {
-    return events?.some(event => isSameDay(new Date(event.startTime), day)) || false;
+    return allEvents.some(event => isSameDay(new Date(event.startTime), day));
   };
 
   const days = getDaysInMonth();
