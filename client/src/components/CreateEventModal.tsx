@@ -125,12 +125,14 @@ export default function CreateEventModal({
 
   const createEventMutation = useMutation({
     mutationFn: (data: FormData) => {
-      return apiRequest("POST", "/api/events", {
+      const processedData = {
         ...data,
         tags: data.tags ? data.tags.split(',').map(tag => tag.trim()) : [],
         createdBy: user?.id,
         visibility: "household",
-      });
+        assignedTo: data.assignedTo || null, // Convert empty string to null
+      };
+      return apiRequest("POST", "/api/events", processedData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
