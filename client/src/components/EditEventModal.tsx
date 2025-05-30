@@ -190,7 +190,8 @@ export default function EditEventModal({
                     <Textarea 
                       placeholder="Enter event description" 
                       className="min-h-[80px]"
-                      {...field} 
+                      {...field}
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -338,7 +339,7 @@ export default function EditEventModal({
                   <FormItem>
                     <FormLabel>Category</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Work, Personal, Family" {...field} />
+                      <Input placeholder="e.g., Work, Personal, Family" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -430,8 +431,14 @@ export default function EditEventModal({
                   Cancel
                 </Button>
                 <Button
-                  type="submit"
+                  type="button"
                   disabled={updateEventMutation.isPending}
+                  onClick={() => {
+                    console.log("Button clicked!");
+                    const formData = form.getValues();
+                    console.log("Form data:", formData);
+                    onSubmit(formData);
+                  }}
                 >
                   {updateEventMutation.isPending ? "Updating..." : "Update Event"}
                 </Button>
