@@ -171,6 +171,8 @@ export const insertTodoSchema = createInsertSchema(todos).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  dueDate: z.string().transform((str) => str ? new Date(str) : null).optional(),
 });
 
 export const insertHouseholdMembershipSchema = createInsertSchema(householdMemberships).omit({

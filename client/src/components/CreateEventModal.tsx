@@ -90,6 +90,16 @@ export default function CreateEventModal({
     queryKey: ["/api/households"],
   });
 
+  // Get default household - current household or personal household if viewing "All"
+  const getDefaultHousehold = () => {
+    if (currentHousehold) {
+      return currentHousehold.id;
+    }
+    // If viewing "All", default to Personal household
+    const personalHousehold = households.find(h => h.name === "Personal");
+    return personalHousehold?.id;
+  };
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -99,7 +109,7 @@ export default function CreateEventModal({
       endTime: getDefaultEndTime(),
       category: "",
       assignedTo: "",
-      householdId: currentHousehold?.id,
+      householdId: getDefaultHousehold(),
     },
   });
 
@@ -412,29 +422,34 @@ export default function CreateEventModal({
             <FormField
               control={form.control}
               name="assignedTo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Assign To</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select person to assign" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value={user?.id || ""}>Me</SelectItem>
-                      {currentHousehold?.memberships
-                        ?.filter((membership) => membership.userId !== user?.id)
-                        .map((membership) => (
-                          <SelectItem key={membership.userId} value={membership.userId}>
-                            {membership.user.firstName} {membership.user.lastName}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const selectedHouseholdId = form.watch("householdId");
+                const selectedHousehold = households.find(h => h.id === selectedHouseholdId);
+                
+                return (
+                  <FormItem>
+                    <FormLabel>Assign To</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select person to assign" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {user?.id && <SelectItem value={user.id}>Me</SelectItem>}
+                        {selectedHousehold?.memberships
+                          ?.filter((membership) => membership.userId !== user?.id)
+                          .map((membership) => (
+                            <SelectItem key={membership.userId} value={membership.userId}>
+                              {membership.user.firstName} {membership.user.lastName}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <div className="flex justify-end gap-2">
