@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Bell, ChevronDown } from "lucide-react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import HouseholdSelector from "./HouseholdSelector";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +14,7 @@ interface AppHeaderProps {
 export default function AppHeader({ currentHousehold, onHouseholdChange }: AppHeaderProps) {
   const { user } = useAuth();
   const [showHouseholdSelector, setShowHouseholdSelector] = useState(false);
+  const [, setLocation] = useLocation();
 
   return (
     <>
@@ -42,7 +44,12 @@ export default function AppHeader({ currentHousehold, onHouseholdChange }: AppHe
             </Button>
             
             {/* Profile */}
-            <Button variant="ghost" size="sm" className="p-1 hover:bg-gray-100">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="p-1 hover:bg-gray-100"
+              onClick={() => setLocation('/profile')}
+            >
               <img
                 src={user?.profileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.firstName || user?.email || 'User')}&background=6366f1&color=fff`}
                 alt="Profile"
