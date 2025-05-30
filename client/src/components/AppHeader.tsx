@@ -26,7 +26,7 @@ export default function AppHeader({ currentHousehold, onHouseholdChange }: AppHe
               className="flex items-center space-x-2 bg-gray-100 border-gray-200 hover:bg-gray-200 text-gray-900"
             >
               <span className="text-sm font-medium">
-                {currentHousehold?.name || "Select Household"}
+                {currentHousehold?.name || "All Households"}
               </span>
               <ChevronDown className="h-4 w-4 text-gray-400" />
             </Button>

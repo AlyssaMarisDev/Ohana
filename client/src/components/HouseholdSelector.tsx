@@ -14,7 +14,7 @@ interface HouseholdSelectorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentHousehold: HouseholdWithMembers | null;
-  onHouseholdChange: (householdId: number) => void;
+  onHouseholdChange: (householdId: number | "all") => void;
 }
 
 export default function HouseholdSelector({
@@ -57,6 +57,23 @@ export default function HouseholdSelector({
         </DialogHeader>
         
         <div className="space-y-3">
+          {/* All Households Option */}
+          <Button
+            variant={!currentHousehold ? "default" : "outline"}
+            onClick={() => handleSelectHousehold("all")}
+            className="w-full p-4 h-auto justify-start"
+          >
+            <div className="flex items-center space-x-3 w-full">
+              <div className="bg-gray-100 p-2 rounded-lg">
+                <Home className="h-5 w-5 text-gray-600" />
+              </div>
+              <div className="flex-1 text-left">
+                <h3 className="font-medium">All Households</h3>
+                <p className="text-sm text-gray-600">View all your households together</p>
+              </div>
+            </div>
+          </Button>
+
           {isLoading ? (
             <div className="space-y-3">
               {[...Array(3)].map((_, i) => (
