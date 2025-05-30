@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { User, Settings, LogOut, Home, Plus, Calendar, Shield, Share2 } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 import AppHeader from "@/components/AppHeader";
 import BottomNavigation from "@/components/BottomNavigation";
@@ -14,19 +15,58 @@ import type { HouseholdWithMembers } from "@shared/schema";
 export default function Profile() {
   const { user } = useAuth();
   const [showCreateHousehold, setShowCreateHousehold] = useState(false);
+  const queryClient = useQueryClient();
 
   // Fetch user's households
   const { data: households, isLoading: householdsLoading } = useQuery<HouseholdWithMembers[]>({
     queryKey: ["/api/households"],
   });
 
+  // Fetch Google Calendar connection status
+  const { data: googleStatus, isLoading: googleStatusLoading } = useQuery<{connected: boolean, syncEnabled: boolean}>({
+    queryKey: ["/api/google/status"],
+  });
+
   const handleLogout = () => {
     window.location.href = "/api/logout";
   };
 
+  // Connect to Google Calendar
+  const connectGoogleMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/google/auth", {
+        method: "GET",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to get auth URL");
+      return response.json();
+    },
+    onSuccess: (data: any) => {
+      window.location.href = data.authUrl;
+    },
+  });
+
+  // Disconnect Google Calendar
+  const disconnectGoogleMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/google/disconnect", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to disconnect");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/google/status"] });
+    },
+  });
+
   const handleConnectGoogleCalendar = () => {
-    // Mock Google Calendar integration
-    alert("Google Calendar integration would be initiated here (OAuth flow)");
+    connectGoogleMutation.mutate();
+  };
+
+  const handleDisconnectGoogleCalendar = () => {
+    disconnectGoogleMutation.mutate();
   };
 
   if (!user) {
@@ -139,7 +179,7 @@ export default function Profile() {
             </CardContent>
           </Card>
           
-          {/* Google Calendar Integration Mock */}
+          {/* Google Calendar Integration */}
           <Card className="mb-6">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center">
@@ -148,24 +188,43 @@ export default function Profile() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
-                    <Calendar className="h-4 w-4 text-white" />
+              {googleStatusLoading ? (
+                <Skeleton className="h-16 w-full" />
+              ) : (
+                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
+                      <Calendar className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">Google Calendar</h4>
+                      <p className="text-sm text-gray-600">
+                        {googleStatus?.connected ? 'Sync enabled' : 'Connect to sync your calendar events'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900">Google Calendar</h4>
-                    <p className="text-sm text-gray-600">Sync your calendar events</p>
-                  </div>
+                  {googleStatus?.connected ? (
+                    <Button
+                      onClick={handleDisconnectGoogleCalendar}
+                      disabled={disconnectGoogleMutation.isPending}
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600 border-red-600 hover:bg-red-50"
+                    >
+                      {disconnectGoogleMutation.isPending ? 'Disconnecting...' : 'Disconnect'}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleConnectGoogleCalendar}
+                      disabled={connectGoogleMutation.isPending}
+                      size="sm"
+                      className="bg-blue-500 hover:bg-blue-600 text-white"
+                    >
+                      {connectGoogleMutation.isPending ? 'Connecting...' : 'Connect'}
+                    </Button>
+                  )}
                 </div>
-                <Button
-                  onClick={handleConnectGoogleCalendar}
-                  size="sm"
-                  className="bg-blue-500 hover:bg-blue-600 text-white"
-                >
-                  Connect
-                </Button>
-              </div>
+              )}
             </CardContent>
           </Card>
           
