@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -114,6 +114,14 @@ export default function CreateEventModal({
       householdId: getDefaultHousehold(),
     },
   });
+
+  // Update household when households data changes or currentHousehold changes
+  useEffect(() => {
+    const defaultHousehold = getDefaultHousehold();
+    if (defaultHousehold) {
+      form.setValue("householdId", defaultHousehold);
+    }
+  }, [households, currentHousehold, getDefaultHousehold]);
 
   const createEventMutation = useMutation({
     mutationFn: (data: FormData) => {

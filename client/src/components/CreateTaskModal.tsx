@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -91,6 +91,14 @@ export default function CreateTaskModal({
       tags: "",
     },
   });
+
+  // Update household when households data changes or currentHousehold changes
+  useEffect(() => {
+    const defaultHousehold = getDefaultHousehold();
+    if (defaultHousehold) {
+      form.setValue("householdId", defaultHousehold);
+    }
+  }, [households, currentHousehold, getDefaultHousehold]);
 
   const createTaskMutation = useMutation({
     mutationFn: (data: FormData) => {
