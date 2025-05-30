@@ -115,6 +115,33 @@ export default function CreateEventModal({
     },
   });
 
+  // Track the duration between start and end times
+  const [lastStartTime, setLastStartTime] = useState<Date | null>(null);
+  const [duration, setDuration] = useState<number>(60 * 60 * 1000); // Default 1 hour
+
+  // Watch for start time changes to auto-update end time
+  const startTime = form.watch("startTime");
+  const endTime = form.watch("endTime");
+
+  useEffect(() => {
+    if (startTime && endTime) {
+      // Update duration when end time changes
+      const currentDuration = endTime.getTime() - startTime.getTime();
+      if (currentDuration > 0) {
+        setDuration(currentDuration);
+      }
+    }
+  }, [endTime]);
+
+  useEffect(() => {
+    if (startTime && lastStartTime && startTime.getTime() !== lastStartTime.getTime()) {
+      // Start time changed, update end time maintaining the duration
+      const newEndTime = new Date(startTime.getTime() + duration);
+      form.setValue("endTime", newEndTime);
+    }
+    setLastStartTime(startTime);
+  }, [startTime, duration]);
+
   // Update household when households data changes or currentHousehold changes
   useEffect(() => {
     const defaultHousehold = getDefaultHousehold();
