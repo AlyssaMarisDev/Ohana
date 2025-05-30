@@ -68,13 +68,20 @@ export default function EditEventModal({
   });
 
   const updateEventMutation = useMutation({
-    mutationFn: (data: FormData) => {
+    mutationFn: async (data: FormData) => {
       const processedData = {
         ...data,
         tags: data.tags ? data.tags.split(',').map(tag => tag.trim()) : [],
         assignedTo: data.assignedTo || null,
       };
-      return apiRequest("PATCH", `/api/events/${event.id}`, processedData);
+      const response = await fetch(`/api/events/${event.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(processedData),
+      });
+      if (!response.ok) throw new Error("Failed to update event");
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
@@ -96,8 +103,13 @@ export default function EditEventModal({
   });
 
   const deleteEventMutation = useMutation({
-    mutationFn: () => {
-      return apiRequest("DELETE", `/api/events/${event.id}`);
+    mutationFn: async () => {
+      const response = await fetch(`/api/events/${event.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to delete event");
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });

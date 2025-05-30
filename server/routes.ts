@@ -162,9 +162,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const eventId = parseInt(req.params.id);
       const updates = req.body;
+      const userId = req.user.claims.sub;
       
+      // Get the original event to check if it has a Google event ID
+      const originalEvent = await storage.getEvent(eventId);
+      if (!originalEvent) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      
+      // Update the event in our database
       const event = await storage.updateEvent(eventId, updates);
       const eventWithDetails = await storage.getEvent(event.id);
+      
+      // If this event was originally synced from Google Calendar, update it there too
+      if (originalEvent.googleEventId) {
+        try {
+          const googleEvent = {
+            summary: updates.title || originalEvent.title,
+            description: updates.description || originalEvent.description || '',
+            start: {
+              dateTime: (updates.startTime || originalEvent.startTime).toISOString(),
+              timeZone: 'America/Los_Angeles'
+            },
+            end: {
+              dateTime: (updates.endTime || originalEvent.endTime).toISOString(),
+              timeZone: 'America/Los_Angeles'
+            }
+          };
+          
+          await googleCalendarService.updateCalendarEvent(userId, originalEvent.googleEventId, googleEvent);
+        } catch (googleError) {
+          console.error("Failed to update Google Calendar event:", googleError);
+          // Don't fail the whole operation if Google sync fails
+        }
+      }
       
       res.json(eventWithDetails);
     } catch (error) {
@@ -176,7 +207,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/events/:id', isAuthenticated, async (req: any, res) => {
     try {
       const eventId = parseInt(req.params.id);
+      const userId = req.user.claims.sub;
+      
+      // Get the event to check if it has a Google event ID before deleting
+      const event = await storage.getEvent(eventId);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      
+      // Delete from our database first
       await storage.deleteEvent(eventId);
+      
+      // If this event was synced from Google Calendar, delete it there too
+      if (event.googleEventId) {
+        try {
+          await googleCalendarService.deleteCalendarEvent(userId, event.googleEventId);
+        } catch (googleError) {
+          console.error("Failed to delete Google Calendar event:", googleError);
+          // Don't fail the whole operation if Google sync fails
+        }
+      }
+      
       res.json({ message: "Event deleted successfully" });
     } catch (error) {
       console.error("Error deleting event:", error);

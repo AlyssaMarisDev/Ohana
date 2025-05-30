@@ -71,6 +71,7 @@ export const events = pgTable("events", {
   createdBy: varchar("created_by").notNull().references(() => users.id),
   assignedTo: varchar("assigned_to").references(() => users.id),
   visibility: varchar("visibility", { length: 50 }).notNull().default("household"), // personal, household, public
+  googleEventId: varchar("google_event_id"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
