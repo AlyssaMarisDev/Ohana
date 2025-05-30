@@ -119,6 +119,7 @@ export default function CreateEventModal({
     mutationFn: (data: FormData) => {
       return apiRequest("POST", "/api/events", {
         ...data,
+        tags: data.tags ? data.tags.split(',').map(tag => tag.trim()) : [],
         createdBy: user?.id,
         visibility: "household",
       });
@@ -388,6 +389,23 @@ export default function CreateEventModal({
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="tags"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tags</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="work, meeting, important (comma separated)"
+                      {...field}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
