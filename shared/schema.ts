@@ -162,6 +162,9 @@ export const insertEventSchema = createInsertSchema(events).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  startTime: z.string().transform((str) => new Date(str)),
+  endTime: z.string().transform((str) => new Date(str)),
 });
 
 export const insertTodoSchema = createInsertSchema(todos).omit({

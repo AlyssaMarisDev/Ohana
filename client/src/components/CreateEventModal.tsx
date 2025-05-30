@@ -1,28 +1,15 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
 import { z } from "zod";
-import { Calendar, Clock, User, Tag } from "lucide-react";
-
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Form,
   FormControl,
@@ -31,8 +18,24 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon, Clock } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -49,7 +52,10 @@ const formSchema = z.object({
   }),
   category: z.string().optional(),
   assignedTo: z.string().optional(),
-  visibility: z.enum(["personal", "household", "public"]).default("household"),
+  householdId: z.number().optional(),
+}).refine((data) => data.endTime > data.startTime, {
+  message: "End time must be after start time",
+  path: ["endTime"],
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -73,16 +79,27 @@ export default function CreateEventModal({
   const [showStartCalendar, setShowStartCalendar] = useState(false);
   const [showEndCalendar, setShowEndCalendar] = useState(false);
 
+  const getDefaultEndTime = () => {
+    const start = defaultDate || new Date();
+    const end = new Date(start);
+    end.setHours(end.getHours() + 1);
+    return end;
+  };
+
+  const { data: households = [] } = useQuery<HouseholdWithMembers[]>({
+    queryKey: ["/api/households"],
+  });
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       description: "",
       startTime: defaultDate || new Date(),
-      endTime: defaultDate || new Date(),
+      endTime: getDefaultEndTime(),
       category: "",
       assignedTo: "",
-      visibility: "household",
+      householdId: currentHousehold?.id,
     },
   });
 
@@ -90,63 +107,40 @@ export default function CreateEventModal({
     mutationFn: (data: FormData) => {
       return apiRequest("POST", "/api/events", {
         ...data,
-        householdId: currentHousehold?.id,
-        startTime: data.startTime.toISOString(),
-        endTime: data.endTime.toISOString(),
+        createdBy: user?.id,
+        visibility: "household",
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/households"] });
+      form.reset();
+      onOpenChange(false);
       toast({
         title: "Event created",
         description: "Your event has been created successfully.",
       });
-      form.reset();
-      onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error) => {
+      console.error("Event creation error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create event",
+        description: "Failed to create event. Please try again.",
         variant: "destructive",
       });
     },
   });
 
   const onSubmit = (data: FormData) => {
-    if (data.endTime <= data.startTime) {
-      form.setError("endTime", {
-        type: "manual",
-        message: "End time must be after start time",
-      });
-      return;
-    }
     createEventMutation.mutate(data);
   };
 
-  const categories = [
-    "Work",
-    "Personal",
-    "Family",
-    "Health",
-    "Social",
-    "Travel",
-    "Shopping",
-    "Exercise",
-    "Education",
-    "Entertainment",
-  ];
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center">
-            <Calendar className="h-5 w-5 mr-2" />
-            Create Event
-          </DialogTitle>
+          <DialogTitle>Create Event</DialogTitle>
         </DialogHeader>
-
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -171,7 +165,7 @@ export default function CreateEventModal({
                   <FormLabel>Description</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Event description (optional)"
+                      placeholder="Event description"
                       className="resize-none"
                       {...field}
                     />
@@ -186,32 +180,83 @@ export default function CreateEventModal({
                 control={form.control}
                 name="startTime"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>Start Time</FormLabel>
                     <Popover open={showStartCalendar} onOpenChange={setShowStartCalendar}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
-                            variant="outline"
-                            className="w-full justify-start text-left font-normal"
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
                           >
-                            <Clock className="mr-2 h-4 w-4" />
-                            {format(field.value, "MMM d, h:mm a")}
+                            {field.value ? (
+                              <div className="flex items-center gap-2">
+                                <CalendarIcon className="h-4 w-4" />
+                                <span className="text-xs">
+                                  {format(field.value, "MMM d")}
+                                </span>
+                                <Clock className="h-3 w-3" />
+                                <span className="text-xs">
+                                  {format(field.value, "HH:mm")}
+                                </span>
+                              </div>
+                            ) : (
+                              <span>Pick start time</span>
+                            )}
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={field.value}
-                          onSelect={(date) => {
-                            if (date) {
-                              field.onChange(date);
-                              setShowStartCalendar(false);
+                        <div className="p-3 space-y-3">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={(date) => {
+                              if (date) {
+                                const newDate = new Date(date);
+                                if (field.value) {
+                                  newDate.setHours(field.value.getHours());
+                                  newDate.setMinutes(field.value.getMinutes());
+                                }
+                                field.onChange(newDate);
+                              }
+                            }}
+                            disabled={(date) =>
+                              date < new Date(new Date().setHours(0, 0, 0, 0))
                             }
-                          }}
-                          initialFocus
-                        />
+                            initialFocus
+                          />
+                          <div className="flex gap-2">
+                            <Input
+                              type="time"
+                              value={
+                                field.value
+                                  ? format(field.value, "HH:mm")
+                                  : ""
+                              }
+                              onChange={(e) => {
+                                if (field.value && e.target.value) {
+                                  const [hours, minutes] = e.target.value.split(":");
+                                  const newDate = new Date(field.value);
+                                  newDate.setHours(parseInt(hours));
+                                  newDate.setMinutes(parseInt(minutes));
+                                  field.onChange(newDate);
+                                }
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowStartCalendar(false)}
+                            >
+                              Done
+                            </Button>
+                          </div>
+                        </div>
                       </PopoverContent>
                     </Popover>
                     <FormMessage />
@@ -223,32 +268,83 @@ export default function CreateEventModal({
                 control={form.control}
                 name="endTime"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>End Time</FormLabel>
                     <Popover open={showEndCalendar} onOpenChange={setShowEndCalendar}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
-                            variant="outline"
-                            className="w-full justify-start text-left font-normal"
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
                           >
-                            <Clock className="mr-2 h-4 w-4" />
-                            {format(field.value, "MMM d, h:mm a")}
+                            {field.value ? (
+                              <div className="flex items-center gap-2">
+                                <CalendarIcon className="h-4 w-4" />
+                                <span className="text-xs">
+                                  {format(field.value, "MMM d")}
+                                </span>
+                                <Clock className="h-3 w-3" />
+                                <span className="text-xs">
+                                  {format(field.value, "HH:mm")}
+                                </span>
+                              </div>
+                            ) : (
+                              <span>Pick end time</span>
+                            )}
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={field.value}
-                          onSelect={(date) => {
-                            if (date) {
-                              field.onChange(date);
-                              setShowEndCalendar(false);
+                        <div className="p-3 space-y-3">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={(date) => {
+                              if (date) {
+                                const newDate = new Date(date);
+                                if (field.value) {
+                                  newDate.setHours(field.value.getHours());
+                                  newDate.setMinutes(field.value.getMinutes());
+                                }
+                                field.onChange(newDate);
+                              }
+                            }}
+                            disabled={(date) =>
+                              date < new Date(new Date().setHours(0, 0, 0, 0))
                             }
-                          }}
-                          initialFocus
-                        />
+                            initialFocus
+                          />
+                          <div className="flex gap-2">
+                            <Input
+                              type="time"
+                              value={
+                                field.value
+                                  ? format(field.value, "HH:mm")
+                                  : ""
+                              }
+                              onChange={(e) => {
+                                if (field.value && e.target.value) {
+                                  const [hours, minutes] = e.target.value.split(":");
+                                  const newDate = new Date(field.value);
+                                  newDate.setHours(parseInt(hours));
+                                  newDate.setMinutes(parseInt(minutes));
+                                  field.onChange(newDate);
+                                }
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowEndCalendar(false)}
+                            >
+                              Done
+                            </Button>
+                          </div>
+                        </div>
                       </PopoverContent>
                     </Popover>
                     <FormMessage />
@@ -270,9 +366,40 @@ export default function CreateEventModal({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
+                      <SelectItem value="personal">Personal</SelectItem>
+                      <SelectItem value="work">Work</SelectItem>
+                      <SelectItem value="family">Family</SelectItem>
+                      <SelectItem value="health">Health</SelectItem>
+                      <SelectItem value="social">Social</SelectItem>
+                      <SelectItem value="travel">Travel</SelectItem>
+                      <SelectItem value="shopping">Shopping</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="householdId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Household</FormLabel>
+                  <Select 
+                    onValueChange={(value) => field.onChange(parseInt(value))} 
+                    defaultValue={field.value?.toString()}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a household" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {households.map((household) => (
+                        <SelectItem key={household.id} value={household.id.toString()}>
+                          {household.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -282,51 +409,27 @@ export default function CreateEventModal({
               )}
             />
 
-            {currentHousehold && (
-              <FormField
-                control={form.control}
-                name="assignedTo"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Assign To</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a person (optional)" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {currentHousehold.memberships.map((membership) => (
-                          <SelectItem key={membership.userId} value={membership.userId}>
-                            {membership.user.firstName
-                              ? `${membership.user.firstName} ${membership.user.lastName || ''}`.trim()
-                              : membership.user.email}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
             <FormField
               control={form.control}
-              name="visibility"
+              name="assignedTo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Visibility</FormLabel>
+                  <FormLabel>Assign To</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Select person to assign" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="personal">Personal</SelectItem>
-                      <SelectItem value="household">Household</SelectItem>
-                      <SelectItem value="public">Public</SelectItem>
+                      <SelectItem value={user?.id || ""}>Me</SelectItem>
+                      {currentHousehold?.memberships
+                        ?.filter((membership) => membership.userId !== user?.id)
+                        .map((membership) => (
+                          <SelectItem key={membership.userId} value={membership.userId}>
+                            {membership.user.firstName} {membership.user.lastName}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -334,20 +437,16 @@ export default function CreateEventModal({
               )}
             />
 
-            <div className="flex space-x-2 pt-4">
+            <div className="flex justify-end gap-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                className="flex-1"
+                disabled={createEventMutation.isPending}
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={createEventMutation.isPending}
-                className="flex-1 bg-primary hover:bg-primary/90"
-              >
+              <Button type="submit" disabled={createEventMutation.isPending}>
                 {createEventMutation.isPending ? "Creating..." : "Create Event"}
               </Button>
             </div>

@@ -73,6 +73,24 @@ export class DatabaseStorage implements IStorage {
         },
       })
       .returning();
+    
+    // Create personal household if it doesn't exist
+    const existingPersonalHousehold = await db
+      .select()
+      .from(households)
+      .where(and(
+        eq(households.createdBy, user.id),
+        eq(households.name, "Personal")
+      ));
+    
+    if (existingPersonalHousehold.length === 0) {
+      await this.createHousehold({
+        name: "Personal",
+        description: "Your personal household",
+        createdBy: user.id,
+      });
+    }
+    
     return user;
   }
 
