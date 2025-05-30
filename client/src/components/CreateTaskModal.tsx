@@ -44,7 +44,7 @@ const formSchema = z.object({
   dueDate: z.date().optional(),
   priority: z.enum(["low", "medium", "high"]).default("medium"),
   assignedTo: z.string().optional(),
-  visibility: z.enum(["personal", "household", "public"]).default("household"),
+  householdId: z.number().optional(),
   tags: z.string().optional(),
 });
 
@@ -66,6 +66,20 @@ export default function CreateTaskModal({
   const queryClient = useQueryClient();
   const [showCalendar, setShowCalendar] = useState(false);
 
+  const { data: households = [] } = useQuery<HouseholdWithMembers[]>({
+    queryKey: ["/api/households"],
+  });
+
+  // Get default household - current household or personal household if viewing "All"
+  const getDefaultHousehold = () => {
+    if (currentHousehold) {
+      return currentHousehold.id;
+    }
+    // If viewing "All", default to Personal household
+    const personalHousehold = households.find(h => h.name === "Personal");
+    return personalHousehold?.id;
+  };
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -73,7 +87,7 @@ export default function CreateTaskModal({
       description: "",
       priority: "medium",
       assignedTo: "",
-      visibility: "household",
+      householdId: getDefaultHousehold(),
       tags: "",
     },
   });

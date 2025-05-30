@@ -187,11 +187,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/todos', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const validatedData = insertTodoSchema.parse({
+      const todoData = {
         ...req.body,
         createdBy: userId,
-      });
+        assignedTo: req.body.assignedTo || null,
+      };
       
+      const validatedData = insertTodoSchema.parse(todoData);
       const todo = await storage.createTodo(validatedData);
       const todoWithDetails = await storage.getTodo(todo.id);
       

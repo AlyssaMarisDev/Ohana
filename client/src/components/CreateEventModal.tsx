@@ -51,6 +51,7 @@ const formSchema = z.object({
     required_error: "End time is required",
   }),
   category: z.string().optional(),
+  tags: z.string().optional(),
   assignedTo: z.string().optional(),
   householdId: z.number().optional(),
 }).refine((data) => data.endTime > data.startTime, {
@@ -108,6 +109,7 @@ export default function CreateEventModal({
       startTime: defaultDate || new Date(),
       endTime: getDefaultEndTime(),
       category: "",
+      tags: "",
       assignedTo: "",
       householdId: getDefaultHousehold(),
     },
