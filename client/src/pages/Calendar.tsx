@@ -273,8 +273,8 @@ export default function Calendar() {
                               
                               return (
                                 <div>
-                                  <div>Start: {startLabel} {startTimeFormatted}</div>
-                                  <div>End: {endLabel} {endTimeFormatted}</div>
+                                  <div>{startLabel} {startTimeFormatted} -</div>
+                                  <div>{endLabel} {endTimeFormatted}</div>
                                 </div>
                               );
                             }
