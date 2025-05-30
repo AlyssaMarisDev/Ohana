@@ -32,20 +32,26 @@ export default function Dashboard() {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const { data: todayEvents, isLoading: eventsLoading } = useQuery<EventWithDetails[]>({
+  const { data: allEvents, isLoading: eventsLoading } = useQuery<EventWithDetails[]>({
     queryKey: ["/api/events", { 
       startDate: format(today, "yyyy-MM-dd"),
-      endDate: format(tomorrow, "yyyy-MM-dd"),
-      householdId: currentHousehold?.id 
+      endDate: format(tomorrow, "yyyy-MM-dd")
     }],
-    enabled: !!currentHousehold,
   });
 
-  // Fetch pending todos
-  const { data: todos, isLoading: todosLoading } = useQuery<TodoWithDetails[]>({
-    queryKey: ["/api/todos", { householdId: currentHousehold?.id }],
-    enabled: !!currentHousehold,
+  // Fetch all todos
+  const { data: allTodos, isLoading: todosLoading } = useQuery<TodoWithDetails[]>({
+    queryKey: ["/api/todos"],
   });
+
+  // Filter data based on selected household
+  const todayEvents = currentHouseholdId === "all" 
+    ? allEvents || []
+    : allEvents?.filter(event => event.householdId === currentHouseholdId) || [];
+
+  const todos = currentHouseholdId === "all"
+    ? allTodos || []
+    : allTodos?.filter(todo => todo.householdId === currentHouseholdId) || [];
 
   const pendingTodos = todos?.filter(todo => !todo.completed) || [];
 
