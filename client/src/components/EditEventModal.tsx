@@ -71,6 +71,8 @@ export default function EditEventModal({
     mutationFn: async (data: FormData) => {
       const processedData = {
         ...data,
+        startTime: new Date(data.startTime).toISOString(),
+        endTime: new Date(data.endTime).toISOString(),
         tags: data.tags ? data.tags.split(',').map(tag => tag.trim()) : [],
         assignedTo: data.assignedTo || null,
       };

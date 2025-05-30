@@ -170,8 +170,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Event not found" });
       }
       
+      // Process date fields to ensure they're proper Date objects
+      const processedUpdates = {
+        ...updates,
+        ...(updates.startTime && { startTime: new Date(updates.startTime) }),
+        ...(updates.endTime && { endTime: new Date(updates.endTime) }),
+      };
+      
       // Update the event in our database
-      const event = await storage.updateEvent(eventId, updates);
+      const event = await storage.updateEvent(eventId, processedUpdates);
       const eventWithDetails = await storage.getEvent(event.id);
       
       // If this event was originally synced from Google Calendar, update it there too
