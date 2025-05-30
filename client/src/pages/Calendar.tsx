@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, startOfDay } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 
 import AppHeader from "@/components/AppHeader";
@@ -72,10 +72,17 @@ export default function Calendar() {
   // Combine app events and Google Calendar events
   const allEvents = [...(events || []), ...convertedGoogleEvents];
 
-  // Get events for selected date
-  const selectedDateEvents = allEvents.filter(event => 
-    isSameDay(new Date(event.startTime), selectedDate)
-  );
+  // Get events for selected date (including multi-day events)
+  const selectedDateEvents = allEvents.filter(event => {
+    const eventStart = new Date(event.startTime);
+    const eventEnd = new Date(event.endTime);
+    const selectedDateStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+    const eventStartDate = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
+    const eventEndDate = new Date(eventEnd.getFullYear(), eventEnd.getMonth(), eventEnd.getDate());
+    
+    // Check if the selected date falls within the event's timespan
+    return selectedDateStart >= eventStartDate && selectedDateStart <= eventEndDate;
+  });
 
   const previousMonth = () => {
     const newDate = new Date(currentDate);
@@ -105,7 +112,16 @@ export default function Calendar() {
   };
 
   const hasEventsOnDay = (day: Date) => {
-    return allEvents.some(event => isSameDay(new Date(event.startTime), day));
+    return allEvents.some(event => {
+      const eventStart = new Date(event.startTime);
+      const eventEnd = new Date(event.endTime);
+      const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+      const eventStartDate = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
+      const eventEndDate = new Date(eventEnd.getFullYear(), eventEnd.getMonth(), eventEnd.getDate());
+      
+      // Check if this day falls within the event's timespan
+      return dayStart >= eventStartDate && dayStart <= eventEndDate;
+    });
   };
 
   const days = getDaysInMonth();
