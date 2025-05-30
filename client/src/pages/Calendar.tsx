@@ -244,7 +244,22 @@ export default function Calendar() {
                       <div className="flex-1">
                         <h3 className="font-medium text-gray-900">{event.title}</h3>
                         <p className="text-sm text-gray-600">
-                          {format(new Date(event.startTime), "h:mm a")} - {format(new Date(event.endTime), "h:mm a")}
+                          {(() => {
+                            const startTime = new Date(event.startTime);
+                            const endTime = new Date(event.endTime);
+                            const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
+                            const endDateStr = format(endTime, "yyyy-MM-dd");
+                            
+                            const startTimeFormatted = format(startTime, "h:mm a");
+                            const endTimeFormatted = format(endTime, "h:mm a");
+                            
+                            // If end time is on a different day than selected date, show the date
+                            if (selectedDateStr !== endDateStr) {
+                              return `${startTimeFormatted} - ${format(endTime, "MMM d")} ${endTimeFormatted}`;
+                            }
+                            
+                            return `${startTimeFormatted} - ${endTimeFormatted}`;
+                          })()}
                         </p>
                         {event.description && (
                           <p className="text-sm text-gray-500 mt-1">{event.description}</p>
