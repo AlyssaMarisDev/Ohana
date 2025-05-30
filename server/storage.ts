@@ -27,6 +27,7 @@ export interface IStorage {
   // User operations (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  updateUserGoogleTokens(userId: string, tokens: { accessToken: string | null; refreshToken: string | null; syncEnabled: boolean }): Promise<void>;
   
   // Household operations
   createHousehold(household: InsertHousehold): Promise<Household>;
@@ -436,6 +437,18 @@ export class DatabaseStorage implements IStorage {
       .where(eq(todos.id, id))
       .returning();
     return updatedTodo;
+  }
+
+  async updateUserGoogleTokens(userId: string, tokens: { accessToken: string | null; refreshToken: string | null; syncEnabled: boolean }): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        googleAccessToken: tokens.accessToken,
+        googleRefreshToken: tokens.refreshToken,
+        googleCalendarSyncEnabled: tokens.syncEnabled,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
   }
 }
 

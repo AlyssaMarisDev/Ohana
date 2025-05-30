@@ -31,6 +31,9 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  googleAccessToken: varchar("google_access_token"),
+  googleRefreshToken: varchar("google_refresh_token"),
+  googleCalendarSyncEnabled: boolean("google_calendar_sync_enabled").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
