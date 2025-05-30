@@ -131,6 +131,9 @@ export default function EditEventModal({
   });
 
   const onSubmit = (data: FormData) => {
+    console.log("Form submitted with data:", data);
+    console.log("Form errors:", form.formState.errors);
+    
     if (data.endTime <= data.startTime) {
       toast({
         title: "Invalid time",
