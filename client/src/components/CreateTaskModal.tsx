@@ -96,9 +96,9 @@ export default function CreateTaskModal({
     mutationFn: (data: FormData) => {
       const processedData = {
         ...data,
-        householdId: currentHousehold?.id,
         dueDate: data.dueDate?.toISOString(),
         tags: data.tags ? data.tags.split(",").map(tag => tag.trim()).filter(Boolean) : [],
+        visibility: "household",
       };
       return apiRequest("POST", "/api/todos", processedData);
     },
@@ -258,20 +258,25 @@ export default function CreateTaskModal({
 
             <FormField
               control={form.control}
-              name="visibility"
+              name="householdId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Visibility</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormLabel>Household</FormLabel>
+                  <Select 
+                    onValueChange={(value) => field.onChange(parseInt(value))} 
+                    defaultValue={field.value?.toString()}
+                  >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Select a household" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="personal">Personal</SelectItem>
-                      <SelectItem value="household">Household</SelectItem>
-                      <SelectItem value="public">Public</SelectItem>
+                      {households.map((household) => (
+                        <SelectItem key={household.id} value={household.id.toString()}>
+                          {household.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
