@@ -227,21 +227,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getHouseholdEvents(householdId: number, startDate?: Date, endDate?: Date): Promise<EventWithDetails[]> {
-    let query = db
+    const conditions = [eq(events.householdId, householdId)];
+    
+    if (startDate) {
+      conditions.push(gte(events.startTime, startDate));
+    }
+    if (endDate) {
+      conditions.push(lte(events.startTime, endDate));
+    }
+
+    const results = await db
       .select()
       .from(events)
       .leftJoin(users, eq(events.createdBy, users.id))
       .leftJoin(households, eq(events.householdId, households.id))
-      .where(eq(events.householdId, householdId));
-
-    if (startDate) {
-      query = query.where(gte(events.startTime, startDate));
-    }
-    if (endDate) {
-      query = query.where(lte(events.startTime, endDate));
-    }
-
-    const results = await query.orderBy(asc(events.startTime));
+      .where(and(...conditions))
+      .orderBy(asc(events.startTime));
 
     return Promise.all(results.map(async (result) => {
       let assignee: User | undefined;
@@ -263,26 +264,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserEvents(userId: string, startDate?: Date, endDate?: Date): Promise<EventWithDetails[]> {
-    let query = db
+    const conditions = [
+      or(
+        eq(events.createdBy, userId),
+        eq(events.assignedTo, userId)
+      )
+    ];
+    
+    if (startDate) {
+      conditions.push(gte(events.startTime, startDate));
+    }
+    if (endDate) {
+      conditions.push(lte(events.startTime, endDate));
+    }
+
+    const results = await db
       .select()
       .from(events)
       .leftJoin(users, eq(events.createdBy, users.id))
       .leftJoin(households, eq(events.householdId, households.id))
-      .where(
-        or(
-          eq(events.createdBy, userId),
-          eq(events.assignedTo, userId)
-        )
-      );
-
-    if (startDate) {
-      query = query.where(gte(events.startTime, startDate));
-    }
-    if (endDate) {
-      query = query.where(lte(events.startTime, endDate));
-    }
-
-    const results = await query.orderBy(asc(events.startTime));
+      .where(and(...conditions))
+      .orderBy(asc(events.startTime));
 
     return Promise.all(results.map(async (result) => {
       let assignee: User | undefined;

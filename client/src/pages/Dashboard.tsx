@@ -17,15 +17,15 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [showCreateTask, setShowCreateTask] = useState(false);
-  const [currentHouseholdId, setCurrentHouseholdId] = useState<number | null>(null);
+  const [currentHouseholdId, setCurrentHouseholdId] = useState<number | "all">("all");
 
   // Fetch user's households
   const { data: households, isLoading: householdsLoading } = useQuery<HouseholdWithMembers[]>({
     queryKey: ["/api/households"],
   });
 
-  // Set default household
-  const currentHousehold = households?.find(h => h.id === currentHouseholdId) || households?.[0];
+  // Set default household - null for "all" view, specific household otherwise
+  const currentHousehold = currentHouseholdId === "all" ? null : households?.find(h => h.id === currentHouseholdId) || null;
 
   // Fetch today's events
   const today = new Date();

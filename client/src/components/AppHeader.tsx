@@ -7,7 +7,7 @@ import type { HouseholdWithMembers } from "@shared/schema";
 
 interface AppHeaderProps {
   currentHousehold: HouseholdWithMembers | null;
-  onHouseholdChange: (householdId: number) => void;
+  onHouseholdChange: (householdId: number | "all") => void;
 }
 
 export default function AppHeader({ currentHousehold, onHouseholdChange }: AppHeaderProps) {
