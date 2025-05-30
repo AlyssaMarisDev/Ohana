@@ -153,6 +153,7 @@ export const todosRelations = relations(todos, ({ one }) => ({
 // Insert schemas
 export const insertHouseholdSchema = createInsertSchema(households).omit({
   id: true,
+  inviteCode: true,
   createdAt: true,
   updatedAt: true,
 });
