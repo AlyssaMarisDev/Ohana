@@ -13,6 +13,40 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import type { EventWithDetails, HouseholdWithMembers } from "@shared/schema";
 
+// Predefined tag options for displaying full tag names
+const PREDEFINED_TAGS = [
+  { 
+    name: "adults", 
+    label: "Adults Only", 
+    color: "bg-red-100 text-red-800"
+  },
+  { 
+    name: "family", 
+    label: "Family", 
+    color: "bg-blue-100 text-blue-800"
+  },
+  { 
+    name: "work", 
+    label: "Work", 
+    color: "bg-gray-100 text-gray-800"
+  },
+  { 
+    name: "personal", 
+    label: "Personal", 
+    color: "bg-green-100 text-green-800"
+  },
+  { 
+    name: "social", 
+    label: "Social", 
+    color: "bg-purple-100 text-purple-800"
+  },
+  { 
+    name: "medical", 
+    label: "Medical", 
+    color: "bg-orange-100 text-orange-800"
+  }
+];
+
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -295,11 +329,17 @@ export default function Calendar() {
                           )}
                           {event.permissionTags && event.permissionTags.length > 0 && (
                             <>
-                              {event.permissionTags.slice(0, 3).map((tag, index) => (
-                                <Badge key={index} variant="outline" className="text-xs">
-                                  {tag.tag}
-                                </Badge>
-                              ))}
+                              {event.permissionTags.slice(0, 3).map((tag, index) => {
+                                const tagInfo = PREDEFINED_TAGS.find(t => t.name === tag.tag);
+                                return (
+                                  <Badge 
+                                    key={index} 
+                                    className={`text-xs ${tagInfo?.color || 'bg-gray-100 text-gray-800'}`}
+                                  >
+                                    {tagInfo?.label || tag.tag}
+                                  </Badge>
+                                );
+                              })}
                               {event.permissionTags.length > 3 && (
                                 <Badge variant="outline" className="text-xs">
                                   +{event.permissionTags.length - 3}
