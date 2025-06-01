@@ -76,12 +76,29 @@ export const events = pgTable("events", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Event tags table for permission-based access control
+// Event tags table - simple tags for events
 export const eventTags = pgTable("event_tags", {
   id: serial("id").primaryKey(),
   eventId: integer("event_id").notNull().references(() => events.id, { onDelete: 'cascade' }),
-  tag: varchar("tag", { length: 100 }).notNull(), // e.g., "metamours", "friends", "family", "work"
-  permission: varchar("permission", { length: 20 }).notNull().default("view"), // view, edit, suggest
+  tag: varchar("tag", { length: 100 }).notNull(), // e.g., "adults", "family", "work", "personal"
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User tag permissions - controls which tags users can see
+export const userTagPermissions = pgTable("user_tag_permissions", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  tag: varchar("tag", { length: 100 }).notNull(),
+  canView: boolean("can_view").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User event permissions - global event permissions per user per household
+export const userEventPermissions = pgTable("user_event_permissions", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  householdId: integer("household_id").notNull().references(() => households.id),
+  permission: varchar("permission", { length: 20 }).notNull().default("edit"), // view, suggest, edit
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -138,6 +155,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   assignedEvents: many(events),
   createdTodos: many(todos),
   assignedTodos: many(todos),
+  tagPermissions: many(userTagPermissions),
+  eventPermissions: many(userEventPermissions),
 }));
 
 export const householdsRelations = relations(households, ({ one, many }) => ({
@@ -222,6 +241,24 @@ export const todosRelations = relations(todos, ({ one }) => ({
   }),
 }));
 
+export const userTagPermissionsRelations = relations(userTagPermissions, ({ one }) => ({
+  user: one(users, {
+    fields: [userTagPermissions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const userEventPermissionsRelations = relations(userEventPermissions, ({ one }) => ({
+  user: one(users, {
+    fields: [userEventPermissions.userId],
+    references: [users.id],
+  }),
+  household: one(households, {
+    fields: [userEventPermissions.householdId],
+    references: [households.id],
+  }),
+}));
+
 // Insert schemas
 export const insertHouseholdSchema = createInsertSchema(households).omit({
   id: true,
@@ -273,6 +310,10 @@ export type HouseholdWithMembers = Household & {
 // New types for enhanced calendar system
 export type EventTag = typeof eventTags.$inferSelect;
 export type InsertEventTag = typeof eventTags.$inferInsert;
+export type UserTagPermission = typeof userTagPermissions.$inferSelect;
+export type InsertUserTagPermission = typeof userTagPermissions.$inferInsert;
+export type UserEventPermission = typeof userEventPermissions.$inferSelect;
+export type InsertUserEventPermission = typeof userEventPermissions.$inferInsert;
 export type UserGoogleCalendar = typeof userGoogleCalendars.$inferSelect;
 export type InsertUserGoogleCalendar = typeof userGoogleCalendars.$inferInsert;
 export type EventSuggestion = typeof eventSuggestions.$inferSelect;

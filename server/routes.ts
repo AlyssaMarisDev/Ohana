@@ -115,7 +115,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.createEventTag({
             eventId: event.id,
             tag: tag.tag,
-            permission: tag.permission,
           });
         }
       }
