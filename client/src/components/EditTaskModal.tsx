@@ -482,6 +482,11 @@ export default function EditTaskModal({
                 <Button
                   type="submit"
                   disabled={updateTaskMutation.isPending}
+                  onClick={() => {
+                    console.log("Submit button clicked");
+                    console.log("Form valid:", form.formState.isValid);
+                    console.log("Form errors:", form.formState.errors);
+                  }}
                 >
                   {updateTaskMutation.isPending ? "Updating..." : "Update Task"}
                 </Button>
