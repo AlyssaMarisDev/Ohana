@@ -236,16 +236,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const user = await storage.getUser(userId);
         if (user?.googleCalendarSyncEnabled && user?.googleAccessToken) {
-          const updatedEvent = eventWithDetails || originalEvent;
+          // Use the fresh event data from the database
+          const updatedEvent = eventWithDetails || event;
           
           if (originalEvent.googleEventId) {
             // Update existing Google Calendar event
-            await googleCalendarService.updateCalendarEvent(userId, originalEvent.googleEventId, {
+            const success = await googleCalendarService.updateCalendarEvent(userId, originalEvent.googleEventId, {
               title: updatedEvent.title,
               description: updatedEvent.description || '',
               startTime: updatedEvent.startTime,
               endTime: updatedEvent.endTime
             });
+            
+            if (!success) {
+              console.error("Failed to update Google Calendar event, but continuing...");
+            }
           } else {
             // Create new Google Calendar event if it doesn't exist yet
             const googleEventId = await googleCalendarService.createCalendarEvent(userId, {
@@ -258,6 +263,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Update the event with Google Calendar ID if sync was successful
             if (googleEventId) {
               await storage.updateEvent(event.id, { googleEventId });
+              // Refresh the event data to include the Google ID
+              const finalEvent = await storage.getEvent(event.id);
+              if (finalEvent) {
+                Object.assign(eventWithDetails, finalEvent);
+              }
             }
           }
         }
