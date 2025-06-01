@@ -10,6 +10,7 @@ import EditEventModal from "@/components/EditEventModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import type { EventWithDetails, HouseholdWithMembers } from "@shared/schema";
 
 export default function Calendar() {
