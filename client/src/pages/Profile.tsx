@@ -61,6 +61,19 @@ export default function Profile() {
     },
   });
 
+  // Manual Google Calendar sync
+  const syncGoogleMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("/api/google/sync", {
+        method: "POST",
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+    },
+  });
+
   const handleConnectGoogleCalendar = () => {
     connectGoogleMutation.mutate();
   };
@@ -204,15 +217,26 @@ export default function Profile() {
                     </div>
                   </div>
                   {googleStatus?.connected ? (
-                    <Button
-                      onClick={handleDisconnectGoogleCalendar}
-                      disabled={disconnectGoogleMutation.isPending}
-                      size="sm"
-                      variant="outline"
-                      className="text-red-600 border-red-600 hover:bg-red-50"
-                    >
-                      {disconnectGoogleMutation.isPending ? 'Disconnecting...' : 'Disconnect'}
-                    </Button>
+                    <div className="flex space-x-2">
+                      <Button
+                        onClick={() => syncGoogleMutation.mutate()}
+                        disabled={syncGoogleMutation.isPending}
+                        size="sm"
+                        variant="outline"
+                        className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                      >
+                        {syncGoogleMutation.isPending ? 'Syncing...' : 'Sync Now'}
+                      </Button>
+                      <Button
+                        onClick={handleDisconnectGoogleCalendar}
+                        disabled={disconnectGoogleMutation.isPending}
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 border-red-600 hover:bg-red-50"
+                      >
+                        {disconnectGoogleMutation.isPending ? 'Disconnecting...' : 'Disconnect'}
+                      </Button>
+                    </div>
                   ) : (
                     <Button
                       onClick={handleConnectGoogleCalendar}
