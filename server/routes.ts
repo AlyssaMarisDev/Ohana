@@ -169,10 +169,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
       
-      // Fetch Google Calendar events and merge with database events
+      // Sync changes from Google Calendar and merge events
       try {
         const user = await storage.getUser(userId);
         if (user?.googleCalendarSyncEnabled && user?.googleAccessToken) {
+          // First, sync any changes made in Google Calendar back to our database
+          await googleCalendarService.syncGoogleCalendarChanges(userId);
+          
+          // Then fetch updated events from our database (which now includes synced changes)
+          if (householdId) {
+            events = await storage.getHouseholdEvents(
+              parseInt(householdId as string),
+              startDate ? new Date(startDate as string) : undefined,
+              endDate ? new Date(endDate as string) : undefined
+            );
+          } else {
+            events = await storage.getUserEvents(
+              userId,
+              startDate ? new Date(startDate as string) : undefined,
+              endDate ? new Date(endDate as string) : undefined
+            );
+          }
+          
           const start = startDate ? new Date(startDate as string) : new Date();
           const end = endDate ? new Date(endDate as string) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
           
@@ -208,7 +226,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           events = [...events, ...filteredGoogleEvents];
         }
       } catch (googleError) {
-        console.error("Error fetching Google Calendar events:", googleError);
+        console.error("Error syncing with Google Calendar:", googleError);
         // Continue with just database events if Google Calendar fails
       }
       
@@ -550,6 +568,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error checking Google Calendar status:", error);
       res.status(500).json({ message: "Failed to check Google Calendar status" });
+    }
+  });
+
+  app.post('/api/google/sync', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      await googleCalendarService.syncGoogleCalendarChanges(userId);
+      res.json({ message: "Google Calendar sync completed successfully" });
+    } catch (error) {
+      console.error("Error syncing Google Calendar:", error);
+      res.status(500).json({ message: "Failed to sync Google Calendar" });
     }
   });
 

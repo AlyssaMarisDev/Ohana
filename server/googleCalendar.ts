@@ -208,6 +208,78 @@ export class GoogleCalendarService {
       return false;
     }
   }
+
+  async syncGoogleCalendarChanges(userId: string): Promise<void> {
+    const user = await storage.getUser(userId);
+    if (!user?.googleAccessToken || !user?.googleCalendarSyncEnabled) {
+      return;
+    }
+
+    const tokenValid = await this.refreshTokenIfNeeded(userId);
+    if (!tokenValid) {
+      return;
+    }
+
+    oauth2Client.setCredentials({
+      access_token: user.googleAccessToken,
+      refresh_token: user.googleRefreshToken
+    });
+
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+    try {
+      // Get events from last 7 days to 30 days in the future
+      const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+      const response = await calendar.events.list({
+        calendarId: 'primary',
+        timeMin: startDate.toISOString(),
+        timeMax: endDate.toISOString(),
+        singleEvents: true,
+        orderBy: 'startTime'
+      });
+
+      const googleEvents = response.data.items || [];
+
+      // Get all user events that have Google Calendar IDs
+      const userEvents = await storage.getUserEvents(userId);
+      const syncedEvents = userEvents.filter(event => event.googleEventId);
+
+      for (const googleEvent of googleEvents) {
+        // Find corresponding event in our database
+        const dbEvent = syncedEvents.find(event => event.googleEventId === googleEvent.id);
+
+        if (dbEvent) {
+          // Check if the event was updated in Google Calendar
+          const googleUpdated = new Date(googleEvent.updated || googleEvent.created || 0);
+          const dbUpdated = new Date(dbEvent.updatedAt || dbEvent.createdAt || 0);
+
+          if (googleUpdated > dbUpdated) {
+            // Update the database event with changes from Google Calendar
+            await storage.updateEvent(dbEvent.id, {
+              title: googleEvent.summary || dbEvent.title,
+              description: googleEvent.description || '',
+              startTime: new Date(googleEvent.start?.dateTime || googleEvent.start?.date || dbEvent.startTime),
+              endTime: new Date(googleEvent.end?.dateTime || googleEvent.end?.date || dbEvent.endTime),
+            });
+          }
+        }
+      }
+
+      // Check for deleted events - if an event exists in our DB but not in Google Calendar
+      for (const dbEvent of syncedEvents) {
+        const googleEvent = googleEvents.find(ge => ge.id === dbEvent.googleEventId);
+        if (!googleEvent) {
+          // Event was deleted in Google Calendar, delete from our database
+          await storage.deleteEvent(dbEvent.id);
+        }
+      }
+
+    } catch (error) {
+      console.error('Error syncing Google Calendar changes:', error);
+    }
+  }
 }
 
 export const googleCalendarService = new GoogleCalendarService();
