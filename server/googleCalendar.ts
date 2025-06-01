@@ -1,10 +1,18 @@
 import { google } from 'googleapis';
 import { storage } from './storage';
 
+// Get the correct redirect URI based on environment
+const getRedirectUri = () => {
+  if (process.env.REPLIT_DOMAINS) {
+    return `https://${process.env.REPLIT_DOMAINS.split(',')[0]}/api/google/callback`;
+  }
+  return 'http://localhost:5000/api/google/callback';
+};
+
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'http://localhost:5000'}/api/google/callback`
+  getRedirectUri()
 );
 
 export class GoogleCalendarService {
