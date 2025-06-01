@@ -4,6 +4,7 @@ import {
   householdMemberships,
   events,
   todos,
+  eventTags,
   type User,
   type UpsertUser,
   type Household,
@@ -17,6 +18,8 @@ import {
   type TodoWithDetails,
   type HouseholdMembership,
   type InsertHouseholdMembership,
+  type EventTag,
+  type InsertEventTag,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, asc, gte, lte } from "drizzle-orm";
@@ -44,6 +47,11 @@ export interface IStorage {
   getUserEvents(userId: string, startDate?: Date, endDate?: Date): Promise<EventWithDetails[]>;
   updateEvent(id: number, event: Partial<InsertEvent>): Promise<Event>;
   deleteEvent(id: number): Promise<void>;
+  
+  // Event tag operations
+  createEventTag(eventTag: InsertEventTag): Promise<EventTag>;
+  getEventTags(eventId: number): Promise<EventTag[]>;
+  deleteEventTags(eventId: number): Promise<void>;
   
   // Todo operations
   createTodo(todo: InsertTodo): Promise<Todo>;
@@ -449,6 +457,23 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       })
       .where(eq(users.id, userId));
+  }
+
+  // Event tag operations
+  async createEventTag(eventTagData: InsertEventTag): Promise<EventTag> {
+    const [eventTag] = await db.insert(eventTags).values(eventTagData).returning();
+    return eventTag;
+  }
+
+  async getEventTags(eventId: number): Promise<EventTag[]> {
+    return await db
+      .select()
+      .from(eventTags)
+      .where(eq(eventTags.eventId, eventId));
+  }
+
+  async deleteEventTags(eventId: number): Promise<void> {
+    await db.delete(eventTags).where(eq(eventTags.eventId, eventId));
   }
 }
 

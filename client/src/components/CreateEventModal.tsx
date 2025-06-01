@@ -228,6 +228,7 @@ export default function CreateEventModal({
         createdBy: user?.id,
         visibility: "household",
         assignedTo: data.assignedTo || null, // Convert empty string to null
+        eventTags: data.eventTags || [], // Include the new permission tags
       };
       return apiRequest("POST", "/api/events", processedData);
     },

@@ -100,12 +100,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/events', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      const { eventTags, ...eventData } = req.body;
+      
       const validatedData = insertEventSchema.parse({
-        ...req.body,
+        ...eventData,
         createdBy: userId,
       });
       
       const event = await storage.createEvent(validatedData);
+      
+      // Create event tags if provided
+      if (eventTags && Array.isArray(eventTags) && eventTags.length > 0) {
+        for (const tag of eventTags) {
+          await storage.createEventTag({
+            eventId: event.id,
+            tag: tag.tag,
+            permission: tag.permission,
+          });
+        }
+      }
+      
       const eventWithDetails = await storage.getEvent(event.id);
       
       res.json(eventWithDetails);
