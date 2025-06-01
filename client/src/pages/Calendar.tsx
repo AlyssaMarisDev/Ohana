@@ -286,11 +286,25 @@ export default function Calendar() {
                         {event.description && (
                           <p className="text-sm text-gray-500 mt-1">{event.description}</p>
                         )}
-                        <div className="flex items-center mt-2 space-x-2">
+                        <div className="flex items-center mt-2 space-x-2 flex-wrap gap-1">
                           {event.category && (
                             <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md font-medium">
                               {event.category}
                             </span>
+                          )}
+                          {event.permissionTags && event.permissionTags.length > 0 && (
+                            <>
+                              {event.permissionTags.slice(0, 3).map((tag, index) => (
+                                <Badge key={index} variant="outline" className="text-xs">
+                                  {tag.tag}
+                                </Badge>
+                              ))}
+                              {event.permissionTags.length > 3 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{event.permissionTags.length - 3}
+                                </Badge>
+                              )}
+                            </>
                           )}
                           {event.assignee && (
                             <span className="text-xs text-gray-600">
