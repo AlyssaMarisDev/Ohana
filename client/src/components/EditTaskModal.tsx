@@ -16,17 +16,49 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { insertTodoSchema } from "@shared/schema";
 import type { TodoWithDetails, HouseholdWithMembers, User } from "@shared/schema";
 
-const predefinedTags = [
-  { name: "adults", color: "bg-red-500" },
-  { name: "family", color: "bg-blue-500" },
-  { name: "work", color: "bg-green-500" },
-  { name: "personal", color: "bg-purple-500" },
-  { name: "social", color: "bg-orange-500" },
-  { name: "medical", color: "bg-pink-500" },
+// Predefined tag options for task categorization
+const PREDEFINED_TAGS = [
+  { 
+    name: "adults", 
+    label: "Adults Only", 
+    description: "Tasks not suitable for children",
+    color: "bg-red-100 text-red-800"
+  },
+  { 
+    name: "family", 
+    label: "Family", 
+    description: "Family-friendly tasks",
+    color: "bg-blue-100 text-blue-800"
+  },
+  { 
+    name: "work", 
+    label: "Work", 
+    description: "Professional and work tasks",
+    color: "bg-gray-100 text-gray-800"
+  },
+  { 
+    name: "personal", 
+    label: "Personal", 
+    description: "Personal tasks and activities",
+    color: "bg-green-100 text-green-800"
+  },
+  { 
+    name: "social", 
+    label: "Social", 
+    description: "Social tasks and events",
+    color: "bg-purple-100 text-purple-800"
+  },
+  { 
+    name: "medical", 
+    label: "Medical", 
+    description: "Health and medical tasks",
+    color: "bg-orange-100 text-orange-800"
+  }
 ];
 
 const formSchema = insertTodoSchema.extend({
@@ -51,6 +83,7 @@ export default function EditTaskModal({
 }: EditTaskModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
 
   const { data: user } = useQuery({
     queryKey: ["/api/auth/user"],
@@ -73,6 +106,20 @@ export default function EditTaskModal({
       todoTags: task.tags?.map(tag => tag.tag) || [],
     },
   });
+
+  // Helper functions for tag management
+  const addTag = (tagName: string) => {
+    const currentTags = form.getValues("todoTags");
+    
+    if (!currentTags.includes(tagName)) {
+      form.setValue("todoTags", [...currentTags, tagName]);
+    }
+  };
+
+  const removeTag = (tagName: string) => {
+    const currentTags = form.getValues("todoTags");
+    form.setValue("todoTags", currentTags.filter(t => t !== tagName));
+  };
 
   const updateTaskMutation = useMutation({
     mutationFn: (data: FormData) => {
@@ -266,26 +313,95 @@ export default function EditTaskModal({
               name="todoTags"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Task Tags</FormLabel>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {predefinedTags.map((tag) => (
-                      <Button
-                        key={tag.name}
-                        type="button"
-                        variant={field.value.includes(tag.name) ? "default" : "outline"}
-                        size="sm"
-                        className={`${tag.color} text-white`}
-                        onClick={() => {
-                          if (field.value.includes(tag.name)) {
-                            field.onChange(field.value.filter(t => t !== tag.name));
-                          } else {
-                            field.onChange([...field.value, tag.name]);
-                          }
-                        }}
-                      >
-                        {tag.name}
-                      </Button>
-                    ))}
+                  <FormLabel className="flex items-center gap-2">
+                    <Tag className="h-4 w-4" />
+                    Task Tags
+                  </FormLabel>
+                  <div className="space-y-3">
+                    {/* Selected Tags Display */}
+                    {field.value.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {field.value.map((tagName, index) => {
+                          const tagInfo = PREDEFINED_TAGS.find(t => t.name === tagName);
+                          return (
+                            <Badge 
+                              key={index}
+                              className={`flex items-center gap-1 pr-1 ${tagInfo?.color || 'bg-gray-100 text-gray-800'}`}
+                            >
+                              <span>{tagInfo?.label || tagName}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto p-1 hover:bg-transparent"
+                                onClick={() => removeTag(tagName)}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
+                    
+                    {/* Add Tags Interface */}
+                    <Popover open={showTagDropdown} onOpenChange={setShowTagDropdown}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Add Tag
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 p-0" align="start">
+                        <div className="p-3 space-y-2">
+                          <h4 className="font-medium text-sm mb-2">Select Task Tags</h4>
+                          {PREDEFINED_TAGS.map((tag) => {
+                            const isSelected = field.value.includes(tag.name);
+                            
+                            return (
+                              <div 
+                                key={tag.name}
+                                className={`border rounded-lg p-3 cursor-pointer ${
+                                  isSelected ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
+                                }`}
+                                onClick={() => {
+                                  if (isSelected) {
+                                    removeTag(tag.name);
+                                  } else {
+                                    addTag(tag.name);
+                                  }
+                                }}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className={`font-medium text-sm px-2 py-1 rounded ${tag.color}`}>
+                                        {tag.label}
+                                      </span>
+                                      {isSelected && (
+                                        <Badge variant="secondary" className="text-xs">
+                                          Selected
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-gray-600 mt-1">{tag.description}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    
+                    <p className="text-xs text-gray-600">
+                      Task tags help categorize tasks. User permissions to view these tags are managed in their profile settings.
+                    </p>
                   </div>
                   <FormMessage />
                 </FormItem>
