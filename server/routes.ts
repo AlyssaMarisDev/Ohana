@@ -119,6 +119,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Auto-sync to Google Calendar if user has it connected
+      try {
+        const user = await storage.getUser(userId);
+        if (user?.googleCalendarSyncEnabled && user?.googleAccessToken) {
+          const googleEventId = await googleCalendarService.createCalendarEvent(userId, {
+            title: event.title,
+            description: event.description || '',
+            startTime: event.startTime,
+            endTime: event.endTime
+          });
+          
+          // Update the event with Google Calendar ID if sync was successful
+          if (googleEventId) {
+            await storage.updateEvent(event.id, { googleEventId });
+          }
+        }
+      } catch (googleError) {
+        console.error("Failed to sync event to Google Calendar:", googleError);
+        // Don't fail the whole operation if Google sync fails
+      }
+      
       const eventWithDetails = await storage.getEvent(event.id);
       
       res.json(eventWithDetails);
@@ -211,27 +232,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const eventWithDetails = await storage.getEvent(event.id);
       
-      // If this event was originally synced from Google Calendar, update it there too
-      if (originalEvent.googleEventId) {
-        try {
-          const googleEvent = {
-            summary: updates.title || originalEvent.title,
-            description: updates.description || originalEvent.description || '',
-            start: {
-              dateTime: (updates.startTime || originalEvent.startTime).toISOString(),
-              timeZone: 'America/Los_Angeles'
-            },
-            end: {
-              dateTime: (updates.endTime || originalEvent.endTime).toISOString(),
-              timeZone: 'America/Los_Angeles'
-            }
-          };
+      // Sync to Google Calendar if user has it connected
+      try {
+        const user = await storage.getUser(userId);
+        if (user?.googleCalendarSyncEnabled && user?.googleAccessToken) {
+          const updatedEvent = eventWithDetails || originalEvent;
           
-          await googleCalendarService.updateCalendarEvent(userId, originalEvent.googleEventId, googleEvent);
-        } catch (googleError) {
-          console.error("Failed to update Google Calendar event:", googleError);
-          // Don't fail the whole operation if Google sync fails
+          if (originalEvent.googleEventId) {
+            // Update existing Google Calendar event
+            await googleCalendarService.updateCalendarEvent(userId, originalEvent.googleEventId, {
+              title: updatedEvent.title,
+              description: updatedEvent.description || '',
+              startTime: updatedEvent.startTime,
+              endTime: updatedEvent.endTime
+            });
+          } else {
+            // Create new Google Calendar event if it doesn't exist yet
+            const googleEventId = await googleCalendarService.createCalendarEvent(userId, {
+              title: updatedEvent.title,
+              description: updatedEvent.description || '',
+              startTime: updatedEvent.startTime,
+              endTime: updatedEvent.endTime
+            });
+            
+            // Update the event with Google Calendar ID if sync was successful
+            if (googleEventId) {
+              await storage.updateEvent(event.id, { googleEventId });
+            }
+          }
         }
+      } catch (googleError) {
+        console.error("Failed to sync event to Google Calendar:", googleError);
+        // Don't fail the whole operation if Google sync fails
       }
       
       res.json(eventWithDetails);
