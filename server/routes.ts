@@ -343,9 +343,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/todos/:id', isAuthenticated, async (req: any, res) => {
     try {
       const todoId = parseInt(req.params.id);
-      const updates = req.body;
+      const { todoTags, ...updates } = req.body;
       
       const todo = await storage.updateTodo(todoId, updates);
+      
+      // Update todo tags if provided
+      if (todoTags !== undefined) {
+        // Delete existing tags
+        await storage.deleteTodoTags(todoId);
+        
+        // Create new tags
+        if (Array.isArray(todoTags) && todoTags.length > 0) {
+          for (const tagName of todoTags) {
+            await storage.createTodoTag({
+              todoId: todoId,
+              tag: tagName,
+            });
+          }
+        }
+      }
+      
       const todoWithDetails = await storage.getTodo(todo.id);
       
       res.json(todoWithDetails);
