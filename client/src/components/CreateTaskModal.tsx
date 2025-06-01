@@ -38,6 +38,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import type { HouseholdWithMembers } from "@shared/schema";
 
+const predefinedTags = [
+  { name: "adults", color: "bg-red-500" },
+  { name: "family", color: "bg-blue-500" },
+  { name: "work", color: "bg-green-500" },
+  { name: "personal", color: "bg-purple-500" },
+  { name: "social", color: "bg-orange-500" },
+  { name: "medical", color: "bg-pink-500" },
+];
+
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
