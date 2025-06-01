@@ -384,11 +384,15 @@ export class DatabaseStorage implements IStorage {
       assignee = assigneeData;
     }
 
+    // Get todo tags
+    const tags = await this.getTodoTags(result.todos.id);
+
     return {
       ...result.todos,
       creator: result.users!,
       assignee,
       household: result.households || undefined,
+      tags,
     };
   }
 
@@ -506,6 +510,23 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEventTags(eventId: number): Promise<void> {
     await db.delete(eventTags).where(eq(eventTags.eventId, eventId));
+  }
+
+  // Todo tag operations
+  async createTodoTag(todoTagData: InsertTodoTag): Promise<TodoTag> {
+    const [todoTag] = await db.insert(todoTags).values(todoTagData).returning();
+    return todoTag;
+  }
+
+  async getTodoTags(todoId: number): Promise<TodoTag[]> {
+    return await db
+      .select()
+      .from(todoTags)
+      .where(eq(todoTags.todoId, todoId));
+  }
+
+  async deleteTodoTags(todoId: number): Promise<void> {
+    await db.delete(todoTags).where(eq(todoTags.todoId, todoId));
   }
 
   // User permission operations
