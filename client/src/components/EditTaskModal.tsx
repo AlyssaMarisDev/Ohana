@@ -173,6 +173,8 @@ export default function EditTaskModal({
   });
 
   const onSubmit = (data: FormData) => {
+    console.log("Form data:", data);
+    console.log("Form errors:", form.formState.errors);
     updateTaskMutation.mutate(data);
   };
 
