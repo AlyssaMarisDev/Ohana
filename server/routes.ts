@@ -154,7 +154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const { householdId, startDate, endDate } = req.query;
       
-      let events;
+      let events: any[];
       if (householdId) {
         events = await storage.getHouseholdEvents(
           parseInt(householdId as string),
@@ -167,6 +167,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
           startDate ? new Date(startDate as string) : undefined,
           endDate ? new Date(endDate as string) : undefined
         );
+      }
+      
+      // Fetch Google Calendar events and merge with database events
+      try {
+        const user = await storage.getUser(userId);
+        if (user?.googleCalendarSyncEnabled && user?.googleAccessToken) {
+          const start = startDate ? new Date(startDate as string) : new Date();
+          const end = endDate ? new Date(endDate as string) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+          
+          const googleEvents = await googleCalendarService.getCalendarEvents(userId, start, end);
+          
+          // Convert Google Calendar events to our format
+          const convertedGoogleEvents = googleEvents.map(event => ({
+            id: `google-${event.id}`,
+            title: event.summary || 'Untitled Event',
+            description: event.description || '',
+            startTime: new Date(event.start?.dateTime || event.start?.date),
+            endTime: new Date(event.end?.dateTime || event.end?.date),
+            createdAt: null,
+            updatedAt: null,
+            createdBy: userId,
+            householdId: null,
+            assignedTo: null,
+            visibility: 'public',
+            googleEventId: event.id,
+            creator: user,
+            assignee: undefined,
+            household: undefined,
+            permissionTags: [],
+            source: 'google'
+          }));
+          
+          // Filter out Google events that are already synced to our database
+          const filteredGoogleEvents = convertedGoogleEvents.filter(googleEvent => {
+            return !events.some(dbEvent => dbEvent.googleEventId === googleEvent.googleEventId);
+          });
+          
+          // Combine database events with unique Google Calendar events
+          events = [...events, ...filteredGoogleEvents];
+        }
+      } catch (googleError) {
+        console.error("Error fetching Google Calendar events:", googleError);
+        // Continue with just database events if Google Calendar fails
       }
       
       res.json(events);

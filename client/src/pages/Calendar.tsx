@@ -79,38 +79,8 @@ export default function Calendar() {
     enabled: !!currentHousehold,
   });
 
-  // Fetch Google Calendar events
-  const { data: googleEvents, isLoading: googleEventsLoading } = useQuery<any[]>({
-    queryKey: ["/api/google/events", { 
-      startDate: format(monthStart, "yyyy-MM-dd"),
-      endDate: format(monthEnd, "yyyy-MM-dd")
-    }],
-    enabled: true,
-  });
-
-  // Convert Google Calendar events to our format and combine with app events
-  const convertedGoogleEvents = googleEvents?.map(event => ({
-    id: `google-${event.id}`,
-    title: event.summary || 'Untitled Event',
-    description: event.description || '',
-    startTime: new Date(event.start?.dateTime || event.start?.date),
-    endTime: new Date(event.end?.dateTime || event.end?.date),
-    createdAt: null,
-    updatedAt: null,
-    createdBy: 'google',
-    householdId: null,
-    assignedTo: null,
-    visibility: 'public',
-    googleEventId: null,
-    creator: { id: 'google', firstName: 'Google', lastName: 'Calendar', email: null, profileImageUrl: null, createdAt: null, updatedAt: null, googleAccessToken: null, googleRefreshToken: null, googleCalendarSyncEnabled: null },
-    assignee: undefined,
-    household: undefined,
-    permissionTags: [],
-    source: 'google'
-  })) || [];
-
-  // Combine app events and Google Calendar events
-  const allEvents = [...(events || []), ...convertedGoogleEvents];
+  // Events now include Google Calendar events merged by the backend
+  const allEvents = events || [];
 
   // Get events for selected date (including multi-day events)
   const selectedDateEvents = allEvents.filter(event => {
