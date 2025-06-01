@@ -229,7 +229,7 @@ export default function Tasks() {
                             <div className="flex space-x-1">
                               {todo.tags.slice(0, 2).map((tag, index) => (
                                 <Badge key={index} variant="outline" className="text-xs">
-                                  {tag}
+                                  {tag.tag}
                                 </Badge>
                               ))}
                               {todo.tags.length > 2 && (
