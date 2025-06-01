@@ -13,6 +13,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import type { EventWithDetails, HouseholdWithMembers } from "@shared/schema";
 
+// Helper function to check if an event is from Google Calendar
+const isGoogleEvent = (event: any): boolean => {
+  return typeof event.id === 'string' && event.id.startsWith('google-');
+};
+
 // Predefined tag options for displaying full tag names
 const PREDEFINED_TAGS = [
   { 
@@ -90,17 +95,17 @@ export default function Calendar() {
     description: event.description || '',
     startTime: new Date(event.start?.dateTime || event.start?.date),
     endTime: new Date(event.end?.dateTime || event.end?.date),
-    category: null,
-    tags: null,
     createdAt: null,
     updatedAt: null,
     createdBy: 'google',
     householdId: null,
     assignedTo: null,
     visibility: 'public',
+    googleEventId: null,
     creator: { id: 'google', firstName: 'Google', lastName: 'Calendar', email: null, profileImageUrl: null, createdAt: null, updatedAt: null, googleAccessToken: null, googleRefreshToken: null, googleCalendarSyncEnabled: null },
     assignee: undefined,
     household: undefined,
+    permissionTags: [],
     source: 'google'
   })) || [];
 
@@ -273,19 +278,26 @@ export default function Calendar() {
                     <div 
                       key={event.id} 
                       className={`flex items-start space-x-3 p-3 border border-gray-100 rounded-lg transition-colors ${
-                        event.source === 'google' 
+                        isGoogleEvent(event) 
                           ? 'bg-blue-50 border-blue-200' 
                           : 'hover:bg-gray-50 cursor-pointer'
                       }`}
                       onClick={() => {
-                        if (event.source !== 'google') {
-                          setEditingEvent(event);
+                        if (!isGoogleEvent(event)) {
+                          setEditingEvent(event as EventWithDetails);
                         }
                       }}
                     >
-                      <div className="w-1 h-12 bg-primary rounded-full"></div>
+                      <div className={`w-1 h-12 rounded-full ${isGoogleEvent(event) ? 'bg-blue-500' : 'bg-primary'}`}></div>
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{event.title}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium text-gray-900">{event.title}</h3>
+                          {isGoogleEvent(event) && (
+                            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                              Google Calendar
+                            </span>
+                          )}
+                        </div>
                         <div className="text-sm text-gray-600">
                           {(() => {
                             const startTime = new Date(event.startTime);
