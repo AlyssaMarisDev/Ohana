@@ -247,27 +247,16 @@ export default function Calendar() {
                   {selectedDateEvents.map((event) => (
                     <div 
                       key={event.id} 
-                      className={`flex items-start space-x-3 p-3 border border-gray-100 rounded-lg transition-colors ${
-                        isGoogleEvent(event) 
-                          ? 'bg-blue-50 border-blue-200' 
-                          : 'hover:bg-gray-50 cursor-pointer'
-                      }`}
+                      className="flex items-start space-x-3 p-3 border border-gray-100 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
                       onClick={() => {
                         if (!isGoogleEvent(event)) {
                           setEditingEvent(event as EventWithDetails);
                         }
                       }}
                     >
-                      <div className={`w-1 h-12 rounded-full ${isGoogleEvent(event) ? 'bg-blue-500' : 'bg-primary'}`}></div>
+                      <div className="w-1 h-12 bg-primary rounded-full"></div>
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium text-gray-900">{event.title}</h3>
-                          {isGoogleEvent(event) && (
-                            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
-                              Google Calendar
-                            </span>
-                          )}
-                        </div>
+                        <h3 className="font-medium text-gray-900">{event.title}</h3>
                         <div className="text-sm text-gray-600">
                           {(() => {
                             const startTime = new Date(event.startTime);
