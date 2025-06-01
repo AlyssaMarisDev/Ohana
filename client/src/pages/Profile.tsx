@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, Settings, LogOut, Home, Plus, Calendar, Shield, Share2 } from "lucide-react";
+import { User, Settings, LogOut, Home, Plus, Calendar, Shield, Share2, Eye, EyeOff, Tag } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 import AppHeader from "@/components/AppHeader";
