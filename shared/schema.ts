@@ -65,8 +65,6 @@ export const events = pgTable("events", {
   description: text("description"),
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time").notNull(),
-  category: varchar("category", { length: 100 }),
-  tags: text("tags").array(), // Keep existing tags column for backward compatibility
   householdId: integer("household_id").notNull().references(() => households.id),
   createdBy: varchar("created_by").notNull().references(() => users.id),
   assignedTo: varchar("assigned_to").references(() => users.id),
@@ -138,13 +136,20 @@ export const todos = pgTable("todos", {
   completed: boolean("completed").notNull().default(false),
   dueDate: timestamp("due_date"),
   priority: varchar("priority", { length: 20 }).default("medium"), // low, medium, high
-  tags: text("tags").array(),
   householdId: integer("household_id").references(() => households.id),
   createdBy: varchar("created_by").notNull().references(() => users.id),
   assignedTo: varchar("assigned_to").references(() => users.id),
   visibility: varchar("visibility", { length: 50 }).notNull().default("household"), // personal, household, public
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Todo tags table - simple tags for todos
+export const todoTags = pgTable("todo_tags", {
+  id: serial("id").primaryKey(),
+  todoId: integer("todo_id").notNull().references(() => todos.id, { onDelete: 'cascade' }),
+  tag: varchar("tag", { length: 100 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Relations
@@ -226,7 +231,7 @@ export const eventSuggestionsRelations = relations(eventSuggestions, ({ one }) =
   }),
 }));
 
-export const todosRelations = relations(todos, ({ one }) => ({
+export const todosRelations = relations(todos, ({ one, many }) => ({
   household: one(households, {
     fields: [todos.householdId],
     references: [households.id],
@@ -238,6 +243,14 @@ export const todosRelations = relations(todos, ({ one }) => ({
   assignee: one(users, {
     fields: [todos.assignedTo],
     references: [users.id],
+  }),
+  tags: many(todoTags),
+}));
+
+export const todoTagsRelations = relations(todoTags, ({ one }) => ({
+  todo: one(todos, {
+    fields: [todoTags.todoId],
+    references: [todos.id],
   }),
 }));
 
@@ -310,6 +323,8 @@ export type HouseholdWithMembers = Household & {
 // New types for enhanced calendar system
 export type EventTag = typeof eventTags.$inferSelect;
 export type InsertEventTag = typeof eventTags.$inferInsert;
+export type TodoTag = typeof todoTags.$inferSelect;
+export type InsertTodoTag = typeof todoTags.$inferInsert;
 export type UserTagPermission = typeof userTagPermissions.$inferSelect;
 export type InsertUserTagPermission = typeof userTagPermissions.$inferInsert;
 export type UserEventPermission = typeof userEventPermissions.$inferSelect;
@@ -331,6 +346,7 @@ export type TodoWithDetails = Todo & {
   creator: User;
   assignee?: User;
   household?: Household;
+  tags?: TodoTag[];
 };
 
 // Permission check types

@@ -5,6 +5,7 @@ import {
   events,
   todos,
   eventTags,
+  todoTags,
   userTagPermissions,
   userEventPermissions,
   type User,
@@ -18,6 +19,8 @@ import {
   type Todo,
   type InsertTodo,
   type TodoWithDetails,
+  type TodoTag,
+  type InsertTodoTag,
   type HouseholdMembership,
   type InsertHouseholdMembership,
   type EventTag,
@@ -58,6 +61,11 @@ export interface IStorage {
   createEventTag(eventTag: InsertEventTag): Promise<EventTag>;
   getEventTags(eventId: number): Promise<EventTag[]>;
   deleteEventTags(eventId: number): Promise<void>;
+  
+  // Todo tag operations
+  createTodoTag(todoTag: InsertTodoTag): Promise<TodoTag>;
+  getTodoTags(todoId: number): Promise<TodoTag[]>;
+  deleteTodoTags(todoId: number): Promise<void>;
   
   // User permission operations
   getUserTagPermissions(userId: string): Promise<UserTagPermission[]>;
