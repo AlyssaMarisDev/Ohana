@@ -34,7 +34,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Clock } from "lucide-react";
+import { CalendarIcon, Clock, Tag, X, Plus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -54,6 +55,10 @@ const formSchema = z.object({
   tags: z.string().optional(),
   assignedTo: z.string().optional(),
   householdId: z.number().optional(),
+  eventTags: z.array(z.object({
+    tag: z.string(),
+    permission: z.enum(["view", "edit", "suggest"]),
+  })).default([]),
 }).refine((data) => data.endTime > data.startTime, {
   message: "End time must be after start time",
   path: ["endTime"],
@@ -68,6 +73,46 @@ interface CreateEventModalProps {
   defaultDate?: Date;
 }
 
+// Predefined tag options with descriptions
+const PREDEFINED_TAGS = [
+  { 
+    name: "metamours", 
+    label: "Metamours", 
+    description: "Events involving partner's other partners",
+    defaultPermission: "suggest" as const
+  },
+  { 
+    name: "friends", 
+    label: "Friends", 
+    description: "Social events with friends",
+    defaultPermission: "edit" as const
+  },
+  { 
+    name: "family", 
+    label: "Family", 
+    description: "Family-related events",
+    defaultPermission: "edit" as const
+  },
+  { 
+    name: "work", 
+    label: "Work", 
+    description: "Professional and work events",
+    defaultPermission: "view" as const
+  },
+  { 
+    name: "personal", 
+    label: "Personal", 
+    description: "Private personal events",
+    defaultPermission: "view" as const
+  },
+  { 
+    name: "private", 
+    label: "Private", 
+    description: "Completely private events",
+    defaultPermission: "view" as const
+  }
+];
+
 export default function CreateEventModal({
   open,
   onOpenChange,
@@ -79,6 +124,7 @@ export default function CreateEventModal({
   const queryClient = useQueryClient();
   const [showStartCalendar, setShowStartCalendar] = useState(false);
   const [showEndCalendar, setShowEndCalendar] = useState(false);
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
 
   const getDefaultEndTime = () => {
     const start = defaultDate || new Date();
@@ -112,8 +158,32 @@ export default function CreateEventModal({
       tags: "",
       assignedTo: "",
       householdId: getDefaultHousehold(),
+      eventTags: [],
     },
   });
+
+  // Helper functions for tag management
+  const addTag = (tagName: string, permission: "view" | "edit" | "suggest") => {
+    const currentTags = form.getValues("eventTags");
+    const existingTag = currentTags.find(t => t.tag === tagName);
+    
+    if (!existingTag) {
+      form.setValue("eventTags", [...currentTags, { tag: tagName, permission }]);
+    }
+  };
+
+  const removeTag = (tagName: string) => {
+    const currentTags = form.getValues("eventTags");
+    form.setValue("eventTags", currentTags.filter(t => t.tag !== tagName));
+  };
+
+  const updateTagPermission = (tagName: string, permission: "view" | "edit" | "suggest") => {
+    const currentTags = form.getValues("eventTags");
+    const updatedTags = currentTags.map(t => 
+      t.tag === tagName ? { ...t, permission } : t
+    );
+    form.setValue("eventTags", updatedTags);
+  };
 
   // Track the duration between start and end times
   const [lastStartTime, setLastStartTime] = useState<Date | null>(null);
@@ -443,6 +513,133 @@ export default function CreateEventModal({
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Permission-based Tag Management */}
+            <FormField
+              control={form.control}
+              name="eventTags"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <Tag className="h-4 w-4" />
+                    Permission Tags
+                  </FormLabel>
+                  <div className="space-y-3">
+                    {/* Selected Tags Display */}
+                    {field.value.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {field.value.map((eventTag, index) => (
+                          <Badge 
+                            key={index}
+                            variant="secondary" 
+                            className="flex items-center gap-1 pr-1"
+                          >
+                            <span>{PREDEFINED_TAGS.find(t => t.name === eventTag.tag)?.label || eventTag.tag}</span>
+                            <span className="text-xs opacity-70">({eventTag.permission})</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-auto p-1 hover:bg-transparent"
+                              onClick={() => removeTag(eventTag.tag)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Add Tags Interface */}
+                    <Popover open={showTagDropdown} onOpenChange={setShowTagDropdown}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Add Permission Tag
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 p-0" align="start">
+                        <div className="p-3 space-y-2">
+                          <h4 className="font-medium text-sm mb-2">Select Tag & Permission</h4>
+                          {PREDEFINED_TAGS.map((tag) => {
+                            const isSelected = field.value.some(t => t.tag === tag.name);
+                            const currentTag = field.value.find(t => t.tag === tag.name);
+                            
+                            return (
+                              <div 
+                                key={tag.name}
+                                className={`border rounded-lg p-3 space-y-2 ${isSelected ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'}`}
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium text-sm">{tag.label}</span>
+                                      {isSelected && (
+                                        <Badge variant="secondary" className="text-xs">
+                                          Selected
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-gray-600 mt-1">{tag.description}</p>
+                                  </div>
+                                </div>
+                                
+                                {!isSelected ? (
+                                  <div className="flex gap-1">
+                                    {["view", "suggest", "edit"].map((permission) => (
+                                      <Button
+                                        key={permission}
+                                        type="button"
+                                        variant={permission === tag.defaultPermission ? "default" : "outline"}
+                                        size="sm"
+                                        className="text-xs px-2 py-1 h-auto"
+                                        onClick={() => {
+                                          addTag(tag.name, permission as "view" | "suggest" | "edit");
+                                          setShowTagDropdown(false);
+                                        }}
+                                      >
+                                        {permission}
+                                      </Button>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="flex gap-1">
+                                    {["view", "suggest", "edit"].map((permission) => (
+                                      <Button
+                                        key={permission}
+                                        type="button"
+                                        variant={permission === currentTag?.permission ? "default" : "outline"}
+                                        size="sm"
+                                        className="text-xs px-2 py-1 h-auto"
+                                        onClick={() => {
+                                          updateTagPermission(tag.name, permission as "view" | "suggest" | "edit");
+                                        }}
+                                      >
+                                        {permission}
+                                      </Button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    
+                    <p className="text-xs text-gray-600">
+                      Permission tags control who can view, suggest changes, or edit this event based on their household role.
+                    </p>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
