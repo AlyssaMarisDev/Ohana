@@ -282,7 +282,7 @@ export type EventWithDetails = Event & {
   creator: User;
   assignee?: User;
   household?: Household;
-  tags?: EventTag[];
+  permissionTags?: EventTag[];
   suggestions?: EventSuggestion[];
 };
 

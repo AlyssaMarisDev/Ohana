@@ -227,11 +227,15 @@ export class DatabaseStorage implements IStorage {
       assignee = assigneeData;
     }
 
+    // Get event tags
+    const tags = await this.getEventTags(id);
+
     return {
       ...result.events,
       creator: result.users!,
       assignee,
       household: result.households || undefined,
+      permissionTags: tags,
     };
   }
 
@@ -263,11 +267,15 @@ export class DatabaseStorage implements IStorage {
         assignee = assigneeData;
       }
 
+      // Get permission tags for this event
+      const permissionTags = await this.getEventTags(result.events.id);
+
       return {
         ...result.events,
         creator: result.users!,
         assignee,
         household: result.households || undefined,
+        permissionTags,
       };
     }));
   }
@@ -305,11 +313,15 @@ export class DatabaseStorage implements IStorage {
         assignee = assigneeData;
       }
 
+      // Get permission tags for this event
+      const permissionTags = await this.getEventTags(result.events.id);
+
       return {
         ...result.events,
         creator: result.users!,
         assignee,
         household: result.households || undefined,
+        permissionTags,
       };
     }));
   }
