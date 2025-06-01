@@ -66,14 +66,51 @@ export const events = pgTable("events", {
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time").notNull(),
   category: varchar("category", { length: 100 }),
-  tags: text("tags").array(),
-  householdId: integer("household_id").references(() => households.id),
+  tags: text("tags").array(), // Keep existing tags column for backward compatibility
+  householdId: integer("household_id").notNull().references(() => households.id),
   createdBy: varchar("created_by").notNull().references(() => users.id),
   assignedTo: varchar("assigned_to").references(() => users.id),
   visibility: varchar("visibility", { length: 50 }).notNull().default("household"), // personal, household, public
   googleEventId: varchar("google_event_id"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Event tags table for permission-based access control
+export const eventTags = pgTable("event_tags", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id").notNull().references(() => events.id, { onDelete: 'cascade' }),
+  tag: varchar("tag", { length: 100 }).notNull(), // e.g., "metamours", "friends", "family", "work"
+  permission: varchar("permission", { length: 20 }).notNull().default("view"), // view, edit, suggest
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User Google Calendar connections
+export const userGoogleCalendars = pgTable("user_google_calendars", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  googleCalendarId: varchar("google_calendar_id").notNull(),
+  calendarName: varchar("calendar_name", { length: 255 }),
+  syncEnabled: boolean("sync_enabled").default(true),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  webhookId: varchar("webhook_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Event edit suggestions from Google Calendar
+export const eventSuggestions = pgTable("event_suggestions", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id").notNull().references(() => events.id),
+  suggestedBy: varchar("suggested_by").notNull().references(() => users.id),
+  originalData: jsonb("original_data"),
+  suggestedData: jsonb("suggested_data"),
+  status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, approved, rejected
+  googleEventId: varchar("google_event_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
 });
 
 // Todos table
@@ -124,7 +161,7 @@ export const householdMembershipsRelations = relations(householdMemberships, ({ 
   }),
 }));
 
-export const eventsRelations = relations(events, ({ one }) => ({
+export const eventsRelations = relations(events, ({ one, many }) => ({
   household: one(households, {
     fields: [events.householdId],
     references: [households.id],
@@ -135,6 +172,37 @@ export const eventsRelations = relations(events, ({ one }) => ({
   }),
   assignee: one(users, {
     fields: [events.assignedTo],
+    references: [users.id],
+  }),
+  tags: many(eventTags),
+  suggestions: many(eventSuggestions),
+}));
+
+export const eventTagsRelations = relations(eventTags, ({ one }) => ({
+  event: one(events, {
+    fields: [eventTags.eventId],
+    references: [events.id],
+  }),
+}));
+
+export const userGoogleCalendarsRelations = relations(userGoogleCalendars, ({ one }) => ({
+  user: one(users, {
+    fields: [userGoogleCalendars.userId],
+    references: [users.id],
+  }),
+}));
+
+export const eventSuggestionsRelations = relations(eventSuggestions, ({ one }) => ({
+  event: one(events, {
+    fields: [eventSuggestions.eventId],
+    references: [events.id],
+  }),
+  suggestedBy: one(users, {
+    fields: [eventSuggestions.suggestedBy],
+    references: [users.id],
+  }),
+  reviewedBy: one(users, {
+    fields: [eventSuggestions.reviewedBy],
     references: [users.id],
   }),
 }));
@@ -202,14 +270,34 @@ export type HouseholdWithMembers = Household & {
   memberCount: number;
 };
 
+// New types for enhanced calendar system
+export type EventTag = typeof eventTags.$inferSelect;
+export type InsertEventTag = typeof eventTags.$inferInsert;
+export type UserGoogleCalendar = typeof userGoogleCalendars.$inferSelect;
+export type InsertUserGoogleCalendar = typeof userGoogleCalendars.$inferInsert;
+export type EventSuggestion = typeof eventSuggestions.$inferSelect;
+export type InsertEventSuggestion = typeof eventSuggestions.$inferInsert;
+
 export type EventWithDetails = Event & {
   creator: User;
   assignee?: User;
   household?: Household;
+  tags?: EventTag[];
+  suggestions?: EventSuggestion[];
 };
 
 export type TodoWithDetails = Todo & {
   creator: User;
   assignee?: User;
   household?: Household;
+};
+
+// Permission check types
+export type UserPermission = "view" | "edit" | "suggest" | "none";
+export type EventPermissionContext = {
+  userId: string;
+  userRole: string;
+  eventTags: EventTag[];
+  isCreator: boolean;
+  isAssignee: boolean;
 };
