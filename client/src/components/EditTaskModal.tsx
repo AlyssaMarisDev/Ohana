@@ -20,6 +20,15 @@ import { cn } from "@/lib/utils";
 import { insertTodoSchema } from "@shared/schema";
 import type { TodoWithDetails, HouseholdWithMembers, User } from "@shared/schema";
 
+const predefinedTags = [
+  { name: "adults", color: "bg-red-500" },
+  { name: "family", color: "bg-blue-500" },
+  { name: "work", color: "bg-green-500" },
+  { name: "personal", color: "bg-purple-500" },
+  { name: "social", color: "bg-orange-500" },
+  { name: "medical", color: "bg-pink-500" },
+];
+
 const formSchema = insertTodoSchema.extend({
   dueDate: z.date().optional(),
   todoTags: z.array(z.string()).default([]),
@@ -72,10 +81,7 @@ export default function EditTaskModal({
         assignedTo: data.assignedTo || null,
         todoTags: data.todoTags,
       };
-      return apiRequest(`/api/todos/${task.id}`, {
-        method: "PATCH",
-        body: JSON.stringify(processedData),
-      });
+      return apiRequest("PATCH", `/api/todos/${task.id}`, processedData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/todos"] });
@@ -254,15 +260,33 @@ export default function EditTaskModal({
               />
             </div>
 
+            {/* Todo Tags */}
             <FormField
               control={form.control}
-              name="tags"
+              name="todoTags"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tags</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., urgent, shopping (comma separated)" {...field} />
-                  </FormControl>
+                  <FormLabel>Task Tags</FormLabel>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {predefinedTags.map((tag) => (
+                      <Button
+                        key={tag.name}
+                        type="button"
+                        variant={field.value.includes(tag.name) ? "default" : "outline"}
+                        size="sm"
+                        className={`${tag.color} text-white`}
+                        onClick={() => {
+                          if (field.value.includes(tag.name)) {
+                            field.onChange(field.value.filter(t => t !== tag.name));
+                          } else {
+                            field.onChange([...field.value, tag.name]);
+                          }
+                        }}
+                      >
+                        {tag.name}
+                      </Button>
+                    ))}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

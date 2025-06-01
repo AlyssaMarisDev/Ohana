@@ -293,15 +293,33 @@ export default function CreateTaskModal({
               )}
             />
 
+            {/* Todo Tags */}
             <FormField
               control={form.control}
-              name="tags"
+              name="todoTags"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tags</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Tags (comma separated)" {...field} />
-                  </FormControl>
+                  <FormLabel>Task Tags</FormLabel>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {predefinedTags.map((tag) => (
+                      <Button
+                        key={tag.name}
+                        type="button"
+                        variant={field.value.includes(tag.name) ? "default" : "outline"}
+                        size="sm"
+                        className={`${tag.color} text-white`}
+                        onClick={() => {
+                          if (field.value.includes(tag.name)) {
+                            field.onChange(field.value.filter(t => t !== tag.name));
+                          } else {
+                            field.onChange([...field.value, tag.name]);
+                          }
+                        }}
+                      >
+                        {tag.name}
+                      </Button>
+                    ))}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
