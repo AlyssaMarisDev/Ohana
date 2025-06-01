@@ -272,8 +272,16 @@ export default function Calendar() {
                   {selectedDateEvents.map((event) => (
                     <div 
                       key={event.id} 
-                      className="flex items-start space-x-3 p-3 border border-gray-100 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                      onClick={() => setEditingEvent(event)}
+                      className={`flex items-start space-x-3 p-3 border border-gray-100 rounded-lg transition-colors ${
+                        event.source === 'google' 
+                          ? 'bg-blue-50 border-blue-200' 
+                          : 'hover:bg-gray-50 cursor-pointer'
+                      }`}
+                      onClick={() => {
+                        if (event.source !== 'google') {
+                          setEditingEvent(event);
+                        }
+                      }}
                     >
                       <div className="w-1 h-12 bg-primary rounded-full"></div>
                       <div className="flex-1">
