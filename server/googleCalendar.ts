@@ -209,6 +209,46 @@ export class GoogleCalendarService {
     }
   }
 
+  async setupPushNotifications(userId: string): Promise<string | null> {
+    const user = await storage.getUser(userId);
+    if (!user?.googleAccessToken || !user?.googleCalendarSyncEnabled) {
+      return null;
+    }
+
+    const tokenValid = await this.refreshTokenIfNeeded(userId);
+    if (!tokenValid) {
+      return null;
+    }
+
+    oauth2Client.setCredentials({
+      access_token: user.googleAccessToken,
+      refresh_token: user.googleRefreshToken
+    });
+
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+    try {
+      // Create a unique channel ID for this user
+      const channelId = `familysync-${userId}-${Date.now()}`;
+      const webhookUrl = `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'http://localhost:5000'}/api/google/webhook`;
+
+      const response = await calendar.events.watch({
+        calendarId: 'primary',
+        requestBody: {
+          id: channelId,
+          type: 'web_hook',
+          address: webhookUrl,
+          token: userId, // Use userId as verification token
+        }
+      });
+
+      return response.data.id || null;
+    } catch (error) {
+      console.error('Error setting up Google Calendar push notifications:', error);
+      return null;
+    }
+  }
+
   async syncGoogleCalendarChanges(userId: string): Promise<void> {
     const user = await storage.getUser(userId);
     if (!user?.googleAccessToken || !user?.googleCalendarSyncEnabled) {

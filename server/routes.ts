@@ -519,6 +519,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       await googleCalendarService.exchangeCodeForTokens(code as string, userId as string);
+      
+      // Set up push notifications for real-time updates
+      const channelId = await googleCalendarService.setupPushNotifications(userId as string);
+      
+      if (channelId) {
+        console.log(`Set up Google Calendar push notifications for user ${userId}, channel: ${channelId}`);
+      } else {
+        console.log(`Failed to set up push notifications for user ${userId}`);
+      }
+      
       res.redirect('/?google_calendar_connected=true');
     } catch (error) {
       console.error("Error handling Google callback:", error);
@@ -579,6 +589,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error syncing Google Calendar:", error);
       res.status(500).json({ message: "Failed to sync Google Calendar" });
+    }
+  });
+
+  // Webhook endpoint to receive Google Calendar push notifications
+  app.post('/api/google/webhook', async (req, res) => {
+    try {
+      // Google Calendar sends notifications as POST requests with specific headers
+      const channelId = req.headers['x-goog-channel-id'];
+      const resourceState = req.headers['x-goog-resource-state'];
+      const token = req.headers['x-goog-channel-token']; // This contains our userId
+      
+      // Verify the webhook is from Google Calendar
+      if (!channelId || !resourceState || !token) {
+        return res.status(400).json({ error: 'Invalid webhook request' });
+      }
+
+      // The token contains the userId we set when creating the watch
+      const userId = token as string;
+
+      // Only process 'sync' state changes (when calendar data changes)
+      if (resourceState === 'sync') {
+        // Trigger a sync for this user's calendar
+        console.log(`Received Google Calendar notification for user ${userId}`);
+        await googleCalendarService.syncGoogleCalendarChanges(userId);
+      }
+
+      // Always respond with 200 to acknowledge receipt
+      res.status(200).json({ received: true });
+    } catch (error) {
+      console.error('Error processing Google Calendar webhook:', error);
+      res.status(500).json({ error: 'Webhook processing failed' });
     }
   });
 
