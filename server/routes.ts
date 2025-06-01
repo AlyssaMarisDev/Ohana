@@ -174,7 +174,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/events/:id', isAuthenticated, async (req: any, res) => {
     try {
       const eventId = parseInt(req.params.id);
-      const updates = req.body;
+      const { eventTags, ...updates } = req.body;
       const userId = req.user.claims.sub;
       
       // Get the original event to check if it has a Google event ID
@@ -192,6 +192,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Update the event in our database
       const event = await storage.updateEvent(eventId, processedUpdates);
+      
+      // Update event tags if provided
+      if (eventTags !== undefined) {
+        // Delete existing tags
+        await storage.deleteEventTags(eventId);
+        
+        // Create new tags
+        if (Array.isArray(eventTags) && eventTags.length > 0) {
+          for (const tagName of eventTags) {
+            await storage.createEventTag({
+              eventId: eventId,
+              tag: tagName,
+            });
+          }
+        }
+      }
+      
       const eventWithDetails = await storage.getEvent(event.id);
       
       // If this event was originally synced from Google Calendar, update it there too

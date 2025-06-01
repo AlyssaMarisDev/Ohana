@@ -23,7 +23,7 @@ import type { EventWithDetails, HouseholdWithMembers, User } from "@shared/schem
 const formSchema = insertEventSchema.extend({
   startTime: z.date(),
   endTime: z.date(),
-  tags: z.string().optional(),
+  eventTags: z.array(z.string()).default([]),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -60,10 +60,9 @@ export default function EditEventModal({
       description: event.description || "",
       startTime: new Date(event.startTime),
       endTime: new Date(event.endTime),
-      category: event.category || "",
-      tags: event.tags?.join(", ") || "",
       assignedTo: event.assignedTo || "",
       householdId: event.householdId,
+      eventTags: event.permissionTags?.map(tag => tag.tag) || [],
     },
   });
 
@@ -73,17 +72,13 @@ export default function EditEventModal({
         ...data,
         startTime: new Date(data.startTime).toISOString(),
         endTime: new Date(data.endTime).toISOString(),
-        tags: data.tags ? data.tags.split(',').map(tag => tag.trim()) : [],
         assignedTo: data.assignedTo || null,
+        eventTags: data.eventTags,
       };
-      const response = await fetch(`/api/events/${event.id}`, {
+      return apiRequest(`/api/events/${event.id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify(processedData),
       });
-      if (!response.ok) throw new Error("Failed to update event");
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });

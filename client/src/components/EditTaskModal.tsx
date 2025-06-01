@@ -22,7 +22,7 @@ import type { TodoWithDetails, HouseholdWithMembers, User } from "@shared/schema
 
 const formSchema = insertTodoSchema.extend({
   dueDate: z.date().optional(),
-  tags: z.string().optional(),
+  todoTags: z.array(z.string()).default([]),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -61,7 +61,7 @@ export default function EditTaskModal({
       assignedTo: task.assignedTo || "",
       householdId: task.householdId,
       dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
-      tags: task.tags?.join(", ") || "",
+      todoTags: task.tags?.map(tag => tag.tag) || [],
     },
   });
 
@@ -69,10 +69,13 @@ export default function EditTaskModal({
     mutationFn: (data: FormData) => {
       const processedData = {
         ...data,
-        tags: data.tags ? data.tags.split(',').map(tag => tag.trim()) : [],
         assignedTo: data.assignedTo || null,
+        todoTags: data.todoTags,
       };
-      return apiRequest("PATCH", `/api/todos/${task.id}`, processedData);
+      return apiRequest(`/api/todos/${task.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(processedData),
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/todos"] });
