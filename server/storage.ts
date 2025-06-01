@@ -5,6 +5,8 @@ import {
   events,
   todos,
   eventTags,
+  userTagPermissions,
+  userEventPermissions,
   type User,
   type UpsertUser,
   type Household,
@@ -20,6 +22,10 @@ import {
   type InsertHouseholdMembership,
   type EventTag,
   type InsertEventTag,
+  type UserTagPermission,
+  type InsertUserTagPermission,
+  type UserEventPermission,
+  type InsertUserEventPermission,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, asc, gte, lte } from "drizzle-orm";
@@ -52,6 +58,12 @@ export interface IStorage {
   createEventTag(eventTag: InsertEventTag): Promise<EventTag>;
   getEventTags(eventId: number): Promise<EventTag[]>;
   deleteEventTags(eventId: number): Promise<void>;
+  
+  // User permission operations
+  getUserTagPermissions(userId: string): Promise<UserTagPermission[]>;
+  setUserTagPermission(permission: InsertUserTagPermission): Promise<UserTagPermission>;
+  getUserEventPermission(userId: string, householdId: number): Promise<UserEventPermission | undefined>;
+  setUserEventPermission(permission: InsertUserEventPermission): Promise<UserEventPermission>;
   
   // Todo operations
   createTodo(todo: InsertTodo): Promise<Todo>;
@@ -486,6 +498,55 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEventTags(eventId: number): Promise<void> {
     await db.delete(eventTags).where(eq(eventTags.eventId, eventId));
+  }
+
+  // User permission operations
+  async getUserTagPermissions(userId: string): Promise<UserTagPermission[]> {
+    return await db
+      .select()
+      .from(userTagPermissions)
+      .where(eq(userTagPermissions.userId, userId));
+  }
+
+  async setUserTagPermission(permissionData: InsertUserTagPermission): Promise<UserTagPermission> {
+    const [permission] = await db
+      .insert(userTagPermissions)
+      .values(permissionData)
+      .onConflictDoUpdate({
+        target: [userTagPermissions.userId, userTagPermissions.tag],
+        set: {
+          canView: permissionData.canView,
+        },
+      })
+      .returning();
+    return permission;
+  }
+
+  async getUserEventPermission(userId: string, householdId: number): Promise<UserEventPermission | undefined> {
+    const [permission] = await db
+      .select()
+      .from(userEventPermissions)
+      .where(
+        and(
+          eq(userEventPermissions.userId, userId),
+          eq(userEventPermissions.householdId, householdId)
+        )
+      );
+    return permission;
+  }
+
+  async setUserEventPermission(permissionData: InsertUserEventPermission): Promise<UserEventPermission> {
+    const [permission] = await db
+      .insert(userEventPermissions)
+      .values(permissionData)
+      .onConflictDoUpdate({
+        target: [userEventPermissions.userId, userEventPermissions.householdId],
+        set: {
+          permission: permissionData.permission,
+        },
+      })
+      .returning();
+    return permission;
   }
 }
 

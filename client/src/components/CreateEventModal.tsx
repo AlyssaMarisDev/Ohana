@@ -55,10 +55,7 @@ const formSchema = z.object({
   tags: z.string().optional(),
   assignedTo: z.string().optional(),
   householdId: z.number().optional(),
-  eventTags: z.array(z.object({
-    tag: z.string(),
-    permission: z.enum(["view", "edit", "suggest"]),
-  })).default([]),
+  eventTags: z.array(z.string()).default([]),
 }).refine((data) => data.endTime > data.startTime, {
   message: "End time must be after start time",
   path: ["endTime"],
@@ -73,43 +70,43 @@ interface CreateEventModalProps {
   defaultDate?: Date;
 }
 
-// Predefined tag options with descriptions
+// Predefined tag options for event categorization
 const PREDEFINED_TAGS = [
   { 
-    name: "metamours", 
-    label: "Metamours", 
-    description: "Events involving partner's other partners",
-    defaultPermission: "suggest" as const
-  },
-  { 
-    name: "friends", 
-    label: "Friends", 
-    description: "Social events with friends",
-    defaultPermission: "edit" as const
+    name: "adults", 
+    label: "Adults Only", 
+    description: "Events not suitable for children",
+    color: "bg-red-100 text-red-800"
   },
   { 
     name: "family", 
     label: "Family", 
-    description: "Family-related events",
-    defaultPermission: "edit" as const
+    description: "Family-friendly events",
+    color: "bg-blue-100 text-blue-800"
   },
   { 
     name: "work", 
     label: "Work", 
     description: "Professional and work events",
-    defaultPermission: "view" as const
+    color: "bg-gray-100 text-gray-800"
   },
   { 
     name: "personal", 
     label: "Personal", 
-    description: "Private personal events",
-    defaultPermission: "view" as const
+    description: "Personal appointments and activities",
+    color: "bg-green-100 text-green-800"
   },
   { 
-    name: "private", 
-    label: "Private", 
-    description: "Completely private events",
-    defaultPermission: "view" as const
+    name: "social", 
+    label: "Social", 
+    description: "Social gatherings and events",
+    color: "bg-purple-100 text-purple-800"
+  },
+  { 
+    name: "medical", 
+    label: "Medical", 
+    description: "Health and medical appointments",
+    color: "bg-orange-100 text-orange-800"
   }
 ];
 
@@ -163,26 +160,17 @@ export default function CreateEventModal({
   });
 
   // Helper functions for tag management
-  const addTag = (tagName: string, permission: "view" | "edit" | "suggest") => {
+  const addTag = (tagName: string) => {
     const currentTags = form.getValues("eventTags");
-    const existingTag = currentTags.find(t => t.tag === tagName);
     
-    if (!existingTag) {
-      form.setValue("eventTags", [...currentTags, { tag: tagName, permission }]);
+    if (!currentTags.includes(tagName)) {
+      form.setValue("eventTags", [...currentTags, tagName]);
     }
   };
 
   const removeTag = (tagName: string) => {
     const currentTags = form.getValues("eventTags");
-    form.setValue("eventTags", currentTags.filter(t => t.tag !== tagName));
-  };
-
-  const updateTagPermission = (tagName: string, permission: "view" | "edit" | "suggest") => {
-    const currentTags = form.getValues("eventTags");
-    const updatedTags = currentTags.map(t => 
-      t.tag === tagName ? { ...t, permission } : t
-    );
-    form.setValue("eventTags", updatedTags);
+    form.setValue("eventTags", currentTags.filter(t => t !== tagName));
   };
 
   // Track the duration between start and end times
@@ -228,7 +216,7 @@ export default function CreateEventModal({
         createdBy: user?.id,
         visibility: "household",
         assignedTo: data.assignedTo || null, // Convert empty string to null
-        eventTags: data.eventTags || [], // Include the new permission tags
+        eventTags: data.eventTags.map(tag => ({ tag })), // Convert to object format for API
       };
       return apiRequest("POST", "/api/events", processedData);
     },
@@ -519,7 +507,7 @@ export default function CreateEventModal({
               )}
             />
 
-            {/* Permission-based Tag Management */}
+            {/* Event Tags */}
             <FormField
               control={form.control}
               name="eventTags"
@@ -527,31 +515,32 @@ export default function CreateEventModal({
                 <FormItem>
                   <FormLabel className="flex items-center gap-2">
                     <Tag className="h-4 w-4" />
-                    Permission Tags
+                    Event Tags
                   </FormLabel>
                   <div className="space-y-3">
                     {/* Selected Tags Display */}
                     {field.value.length > 0 && (
                       <div className="flex flex-wrap gap-2">
-                        {field.value.map((eventTag, index) => (
-                          <Badge 
-                            key={index}
-                            variant="secondary" 
-                            className="flex items-center gap-1 pr-1"
-                          >
-                            <span>{PREDEFINED_TAGS.find(t => t.name === eventTag.tag)?.label || eventTag.tag}</span>
-                            <span className="text-xs opacity-70">({eventTag.permission})</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-auto p-1 hover:bg-transparent"
-                              onClick={() => removeTag(eventTag.tag)}
+                        {field.value.map((tagName, index) => {
+                          const tagInfo = PREDEFINED_TAGS.find(t => t.name === tagName);
+                          return (
+                            <Badge 
+                              key={index}
+                              className={`flex items-center gap-1 pr-1 ${tagInfo?.color || 'bg-gray-100 text-gray-800'}`}
                             >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </Badge>
-                        ))}
+                              <span>{tagInfo?.label || tagName}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto p-1 hover:bg-transparent"
+                                onClick={() => removeTag(tagName)}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </Badge>
+                          );
+                        })}
                       </div>
                     )}
                     
@@ -565,25 +554,35 @@ export default function CreateEventModal({
                           className="flex items-center gap-2"
                         >
                           <Plus className="h-4 w-4" />
-                          Add Permission Tag
+                          Add Tag
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-80 p-0" align="start">
                         <div className="p-3 space-y-2">
-                          <h4 className="font-medium text-sm mb-2">Select Tag & Permission</h4>
+                          <h4 className="font-medium text-sm mb-2">Select Event Tags</h4>
                           {PREDEFINED_TAGS.map((tag) => {
-                            const isSelected = field.value.some(t => t.tag === tag.name);
-                            const currentTag = field.value.find(t => t.tag === tag.name);
+                            const isSelected = field.value.includes(tag.name);
                             
                             return (
                               <div 
                                 key={tag.name}
-                                className={`border rounded-lg p-3 space-y-2 ${isSelected ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'}`}
+                                className={`border rounded-lg p-3 cursor-pointer ${
+                                  isSelected ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
+                                }`}
+                                onClick={() => {
+                                  if (isSelected) {
+                                    removeTag(tag.name);
+                                  } else {
+                                    addTag(tag.name);
+                                  }
+                                }}
                               >
-                                <div className="flex items-start justify-between">
+                                <div className="flex items-center justify-between">
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2">
-                                      <span className="font-medium text-sm">{tag.label}</span>
+                                      <span className={`font-medium text-sm px-2 py-1 rounded ${tag.color}`}>
+                                        {tag.label}
+                                      </span>
                                       {isSelected && (
                                         <Badge variant="secondary" className="text-xs">
                                           Selected
@@ -593,43 +592,6 @@ export default function CreateEventModal({
                                     <p className="text-xs text-gray-600 mt-1">{tag.description}</p>
                                   </div>
                                 </div>
-                                
-                                {!isSelected ? (
-                                  <div className="flex gap-1">
-                                    {["view", "suggest", "edit"].map((permission) => (
-                                      <Button
-                                        key={permission}
-                                        type="button"
-                                        variant={permission === tag.defaultPermission ? "default" : "outline"}
-                                        size="sm"
-                                        className="text-xs px-2 py-1 h-auto"
-                                        onClick={() => {
-                                          addTag(tag.name, permission as "view" | "suggest" | "edit");
-                                          setShowTagDropdown(false);
-                                        }}
-                                      >
-                                        {permission}
-                                      </Button>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <div className="flex gap-1">
-                                    {["view", "suggest", "edit"].map((permission) => (
-                                      <Button
-                                        key={permission}
-                                        type="button"
-                                        variant={permission === currentTag?.permission ? "default" : "outline"}
-                                        size="sm"
-                                        className="text-xs px-2 py-1 h-auto"
-                                        onClick={() => {
-                                          updateTagPermission(tag.name, permission as "view" | "suggest" | "edit");
-                                        }}
-                                      >
-                                        {permission}
-                                      </Button>
-                                    ))}
-                                  </div>
-                                )}
                               </div>
                             );
                           })}
@@ -638,7 +600,7 @@ export default function CreateEventModal({
                     </Popover>
                     
                     <p className="text-xs text-gray-600">
-                      Permission tags control who can view, suggest changes, or edit this event based on their household role.
+                      Event tags help categorize events. User permissions to view these tags are managed in their profile settings.
                     </p>
                   </div>
                   <FormMessage />
