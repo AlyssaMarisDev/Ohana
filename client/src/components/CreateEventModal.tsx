@@ -208,11 +208,9 @@ export default function CreateEventModal({
     mutationFn: (data: FormData) => {
       const processedData = {
         ...data,
-        tags: data.tags ? data.tags.split(',').map(tag => tag.trim()) : [],
         createdBy: user?.id,
-        visibility: "household",
         assignedTo: data.assignedTo || null, // Convert empty string to null
-        eventTags: data.eventTags.map(tag => ({ tag })), // Convert to object format for API
+        eventTags: data.eventTags, // Pass tags array directly
       };
       return apiRequest("POST", "/api/events", processedData);
     },
@@ -458,50 +456,7 @@ export default function CreateEventModal({
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="personal">Personal</SelectItem>
-                      <SelectItem value="work">Work</SelectItem>
-                      <SelectItem value="family">Family</SelectItem>
-                      <SelectItem value="health">Health</SelectItem>
-                      <SelectItem value="social">Social</SelectItem>
-                      <SelectItem value="travel">Travel</SelectItem>
-                      <SelectItem value="shopping">Shopping</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
-            <FormField
-              control={form.control}
-              name="tags"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tags</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="work, meeting, important (comma separated)"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             {/* Event Tags */}
             <FormField

@@ -111,10 +111,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create event tags if provided
       if (eventTags && Array.isArray(eventTags) && eventTags.length > 0) {
-        for (const tag of eventTags) {
+        for (const tagName of eventTags) {
           await storage.createEventTag({
             eventId: event.id,
-            tag: tag.tag,
+            tag: tagName,
           });
         }
       }

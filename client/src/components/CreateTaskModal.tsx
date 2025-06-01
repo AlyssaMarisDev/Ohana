@@ -45,7 +45,7 @@ const formSchema = z.object({
   priority: z.enum(["low", "medium", "high"]).default("medium"),
   assignedTo: z.string().optional(),
   householdId: z.number().optional(),
-  tags: z.string().optional(),
+  todoTags: z.array(z.string()).default([]),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -88,7 +88,7 @@ export default function CreateTaskModal({
       priority: "medium",
       assignedTo: "",
       householdId: getDefaultHousehold(),
-      tags: "",
+      todoTags: [],
     },
   });
 
@@ -105,8 +105,9 @@ export default function CreateTaskModal({
       const processedData = {
         ...data,
         dueDate: data.dueDate?.toISOString(),
-        tags: data.tags ? data.tags.split(",").map(tag => tag.trim()).filter(Boolean) : [],
-        visibility: "household",
+        createdBy: user?.id,
+        assignedTo: data.assignedTo || null,
+        todoTags: data.todoTags,
       };
       return apiRequest("POST", "/api/todos", processedData);
     },
