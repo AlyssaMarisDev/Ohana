@@ -77,6 +77,8 @@ export default function Calendar() {
       householdId: currentHousehold?.id 
     }],
     enabled: !!currentHousehold,
+    staleTime: 60 * 1000, // 1 minute - data becomes stale after 1 minute
+    refetchInterval: 60 * 1000, // Refetch every 1 minute
   });
 
   // Events now include Google Calendar events merged by the backend
