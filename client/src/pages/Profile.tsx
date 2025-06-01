@@ -64,10 +64,15 @@ export default function Profile() {
   // Manual Google Calendar sync
   const syncGoogleMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("/api/google/sync", {
+      const response = await fetch("/api/google/sync", {
         method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
-      return response;
+      if (!response.ok) throw new Error("Failed to sync");
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
