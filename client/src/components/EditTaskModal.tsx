@@ -64,7 +64,7 @@ const PREDEFINED_TAGS = [
 const formSchema = insertTodoSchema.extend({
   dueDate: z.date().optional(),
   todoTags: z.array(z.string()).default([]),
-});
+}).partial({ createdBy: true }); // Make createdBy optional for editing
 
 type FormData = z.infer<typeof formSchema>;
 
@@ -127,6 +127,7 @@ export default function EditTaskModal({
         ...data,
         assignedTo: data.assignedTo || null,
         todoTags: data.todoTags,
+        createdBy: task.createdBy, // Add the required createdBy field
       };
       return apiRequest("PATCH", `/api/todos/${task.id}`, processedData);
     },
@@ -173,8 +174,6 @@ export default function EditTaskModal({
   });
 
   const onSubmit = (data: FormData) => {
-    console.log("Form data:", data);
-    console.log("Form errors:", form.formState.errors);
     updateTaskMutation.mutate(data);
   };
 
@@ -482,11 +481,6 @@ export default function EditTaskModal({
                 <Button
                   type="submit"
                   disabled={updateTaskMutation.isPending}
-                  onClick={() => {
-                    console.log("Submit button clicked");
-                    console.log("Form valid:", form.formState.isValid);
-                    console.log("Form errors:", form.formState.errors);
-                  }}
                 >
                   {updateTaskMutation.isPending ? "Updating..." : "Update Task"}
                 </Button>
