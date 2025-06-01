@@ -415,11 +415,15 @@ export class DatabaseStorage implements IStorage {
         assignee = assigneeData;
       }
 
+      // Get todo tags
+      const tags = await this.getTodoTags(result.todos.id);
+
       return {
         ...result.todos,
         creator: result.users!,
         assignee,
         household: result.households || undefined,
+        tags,
       };
     }));
   }
@@ -448,11 +452,15 @@ export class DatabaseStorage implements IStorage {
         assignee = assigneeData;
       }
 
+      // Get todo tags
+      const tags = await this.getTodoTags(result.todos.id);
+
       return {
         ...result.todos,
         creator: result.users!,
         assignee,
         household: result.households || undefined,
+        tags,
       };
     }));
   }
