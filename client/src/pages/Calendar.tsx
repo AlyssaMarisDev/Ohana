@@ -416,8 +416,19 @@ export default function Calendar() {
                   const isLargeScreen = window.innerWidth >= 640;
                   const maxEvents = isLargeScreen ? maxEventsLarge : maxEventsSmall;
                   
+                  // For overflow calculation, we need to consider all events that will be visible in this day
+                  // Multi-day events are always shown, so they take up slots
+                  const multiDayEventsInThisDay = dayEvents.filter(event => !event.isSingleDay);
+                  const singleDayEventsInThisDay = dayEvents.filter(event => event.isSingleDay);
+                  
+                  // Calculate how many events we can actually show
+                  const multiDayCount = multiDayEventsInThisDay.length;
+                  const availableSlotsForSingleDay = Math.max(0, maxEvents - multiDayCount);
+                  const singleDayEventsToShow = Math.min(singleDayEventsInThisDay.length, availableSlotsForSingleDay);
+                  
+                  // Total events to show and remaining count
+                  const eventsToShow = multiDayCount + singleDayEventsToShow;
                   const totalEvents = dayEvents.length;
-                  const eventsToShow = Math.min(totalEvents, maxEvents);
                   const remainingEvents = totalEvents - eventsToShow;
                   
                   dayEvents.slice(0, eventsToShow).forEach((event, localIndex) => {
