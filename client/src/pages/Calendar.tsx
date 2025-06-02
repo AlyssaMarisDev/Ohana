@@ -152,23 +152,26 @@ export default function Calendar() {
     const isEndDay = currentDayDate.getTime() === eventEndDate.getTime();
     const isSingleDay = eventStartDate.getTime() === eventEndDate.getTime();
     
-    // Calculate how many days from current day to end of event (within the current week)
-    let daysToEnd = 0;
-    if (!isSingleDay) {
+    // Calculate how many days the event spans from current day
+    let daysToSpan = 1; // Default to 1 day (current day)
+    if (!isSingleDay && isStartDay) {
       const currentDayOfWeek = currentDay.getDay(); // 0 = Sunday, 6 = Saturday
       const daysUntilWeekEnd = 6 - currentDayOfWeek;
       
-      const timeDiff = eventEndDate.getTime() - currentDayDate.getTime();
-      const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+      const timeDiff = eventEndDate.getTime() - eventStartDate.getTime();
+      const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24)) + 1; // Total days the event spans
       
-      daysToEnd = Math.min(daysDiff, daysUntilWeekEnd);
+      daysToSpan = Math.min(daysDiff, daysUntilWeekEnd + 1);
+      
+      // Debug logging
+      console.log(`Event: ${event.title}, Start: ${eventStartDate.toDateString()}, End: ${eventEndDate.toDateString()}, Days to span: ${daysToSpan}`);
     }
     
     return {
       isStartDay,
       isEndDay,
       isSingleDay,
-      daysToEnd,
+      daysToSpan,
       shouldDisplay: isStartDay || isSingleDay // Only display on start day for multi-day events
     };
   };
@@ -293,7 +296,7 @@ export default function Calendar() {
                             `}
                             style={{
                               // For multi-day events, extend the width to cover additional days
-                              width: displayInfo.isSingleDay ? '100%' : `${100 + (displayInfo.daysToEnd * 100)}%`,
+                              width: displayInfo.isSingleDay ? '100%' : `${displayInfo.daysToSpan * 100}%`,
                               zIndex: displayInfo.isSingleDay ? 1 : 10
                             }}
                             title={`${event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')}${!displayInfo.isSingleDay ? ` to ${format(new Date(event.endTime), 'MMM d h:mm a')}` : ''}`}
