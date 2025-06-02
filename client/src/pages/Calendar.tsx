@@ -290,51 +290,47 @@ export default function Calendar() {
               
               return (
                 <div key={weekIndex} className="relative">
-                  {/* Multi-day event bars */}
-                  {multiDayEvents.length > 0 && (
-                    <div className="bg-gray-50 border-b border-gray-200 relative" style={{ minHeight: `${multiDayEvents.length * 26 + 8}px` }}>
-                      {multiDayEvents.map((multiEvent, multiIndex) => {
-                        const primaryTag = multiEvent.event.permissionTags?.[0];
-                        const tagInfo = primaryTag ? PREDEFINED_TAGS.find(t => t.name === primaryTag.tag) : null;
-                        const eventStart = new Date(multiEvent.event.startTime);
-                        const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
-                        
-                        return (
-                          <div
-                            key={multiIndex}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingEvent(multiEvent.event);
-                            }}
-                            className={`
-                              absolute text-xs px-2 py-1 text-white font-medium cursor-pointer leading-tight
-                              ${tagInfo?.color?.includes('red') ? 'bg-red-500' :
-                                tagInfo?.color?.includes('blue') ? 'bg-blue-500' :
-                                tagInfo?.color?.includes('green') ? 'bg-green-500' :
-                                tagInfo?.color?.includes('purple') ? 'bg-purple-500' :
-                                tagInfo?.color?.includes('orange') ? 'bg-orange-500' :
-                                'bg-gray-500'}
-                              hover:opacity-80 transition-opacity rounded
-                            `}
-                            style={{
-                              left: `${(multiEvent.startCol / 7) * 100}%`,
-                              width: `${(multiEvent.span / 7) * 100}%`,
-                              top: `${4 + multiIndex * 26}px`,
-                              height: '22px'
-                            }}
-                            title={`${multiEvent.event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')} to ${format(new Date(multiEvent.event.endTime), 'MMM d h:mm a')}`}
-                          >
-                            <div className="truncate">
-                              {multiEvent.event.title}
-                            </div>
+                  {/* Week days grid with multi-day events overlay */}
+                  <div className="grid grid-cols-7 relative">
+                    {/* Multi-day event bars positioned within the grid */}
+                    {multiDayEvents.map((multiEvent, multiIndex) => {
+                      const primaryTag = multiEvent.event.permissionTags?.[0];
+                      const tagInfo = primaryTag ? PREDEFINED_TAGS.find(t => t.name === primaryTag.tag) : null;
+                      const eventStart = new Date(multiEvent.event.startTime);
+                      const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
+                      
+                      return (
+                        <div
+                          key={multiIndex}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingEvent(multiEvent.event);
+                          }}
+                          className={`
+                            absolute text-xs px-2 py-1 text-white font-medium cursor-pointer leading-tight z-10
+                            ${tagInfo?.color?.includes('red') ? 'bg-red-500' :
+                              tagInfo?.color?.includes('blue') ? 'bg-blue-500' :
+                              tagInfo?.color?.includes('green') ? 'bg-green-500' :
+                              tagInfo?.color?.includes('purple') ? 'bg-purple-500' :
+                              tagInfo?.color?.includes('orange') ? 'bg-orange-500' :
+                              'bg-gray-500'}
+                            hover:opacity-80 transition-opacity rounded
+                          `}
+                          style={{
+                            left: `${(multiEvent.startCol / 7) * 100}%`,
+                            width: `${(multiEvent.span / 7) * 100}%`,
+                            top: `${30 + multiIndex * 26}px`,
+                            height: '22px'
+                          }}
+                          title={`${multiEvent.event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')} to ${format(new Date(multiEvent.event.endTime), 'MMM d h:mm a')}`}
+                        >
+                          <div className="truncate">
+                            {multiEvent.event.title}
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                  
-                  {/* Week days grid */}
-                  <div className="grid grid-cols-7">
+                        </div>
+                      );
+                    })}
+                    
                     {weekDays.map((day, dayIndex) => {
                       const globalIndex = weekStartIndex + dayIndex;
                       const isCurrentMonth = isSameMonth(day, currentDate);
@@ -357,6 +353,7 @@ export default function Calendar() {
                             ${isSelected ? 'bg-primary/5 ring-2 ring-primary ring-inset' : 'hover:bg-gray-50'}
                             ${isToday_ && !isSelected ? 'bg-blue-50' : ''}
                           `}
+                          style={{ paddingTop: `${multiDayEvents.length * 26 + 8}px` }}
                         >
                           <div className={`text-sm font-medium mb-2 ${isToday_ ? 'text-blue-600' : ''}`}>
                             {format(day, "d")}
