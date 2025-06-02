@@ -357,6 +357,20 @@ export default function Calendar() {
                 
                 const allEventElements = [];
                 
+                // Create a global event index mapping to handle overlapping multi-day events
+                const globalEventPositions = new Map();
+                let globalEventIndex = 0;
+                
+                // First pass: assign positions to all events across all days
+                eventsByDay.forEach((dayEvents, dateKey) => {
+                  dayEvents.forEach((event) => {
+                    if (!globalEventPositions.has(event.id)) {
+                      globalEventPositions.set(event.id, globalEventIndex);
+                      globalEventIndex++;
+                    }
+                  });
+                });
+
                 // Render all events with unified spacing and overflow handling
                 eventsByDay.forEach((dayEvents, dateKey) => {
                   const eventStartDate = new Date(dateKey);
@@ -380,7 +394,9 @@ export default function Calendar() {
                   const eventsToShow = Math.min(totalEvents, maxEvents);
                   const remainingEvents = totalEvents - eventsToShow;
                   
-                  dayEvents.slice(0, eventsToShow).forEach((event, eventIndex) => {
+                  dayEvents.slice(0, eventsToShow).forEach((event, localIndex) => {
+                    // Use global position for consistent vertical stacking
+                    const eventIndex = globalEventPositions.get(event.id) % maxEvents;
                     const eventStart = new Date(event.startTime);
                     const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
                     const primaryTag = event.permissionTags?.[0];
