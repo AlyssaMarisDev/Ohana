@@ -243,7 +243,7 @@ export default function Calendar() {
                               setEditingEvent(event);
                             }}
                             className={`
-                              text-xs px-2 py-1 rounded text-white font-medium truncate cursor-pointer leading-tight
+                              text-xs px-2 py-1 rounded text-white font-medium cursor-pointer leading-tight
                               ${tagInfo?.color?.includes('red') ? 'bg-red-500' :
                                 tagInfo?.color?.includes('blue') ? 'bg-blue-500' :
                                 tagInfo?.color?.includes('green') ? 'bg-green-500' :
@@ -254,10 +254,7 @@ export default function Calendar() {
                             `}
                             title={`${event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')}`}
                           >
-                            <div className="truncate">
-                              {!isAllDay && (
-                                <span className="opacity-90">{format(eventStart, 'h:mm')} </span>
-                              )}
+                            <div className="line-clamp-2 break-words">
                               {event.title}
                             </div>
                           </div>
