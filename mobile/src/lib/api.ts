@@ -2,9 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Get the base URL for API requests
 const getBaseUrl = () => {
-  // In development, this should point to your backend
-  // You'll need to replace this with your actual backend URL
-  return 'https://your-replit-domain.replit.dev';
+  // Point to your current Replit backend
+  return 'https://90f08eec-97aa-4ac8-8d25-3eb616dc0019-00-2zr7982xso3op.worf.replit.dev';
 };
 
 class ApiClient {
