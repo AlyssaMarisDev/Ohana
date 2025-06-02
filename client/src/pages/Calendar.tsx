@@ -432,18 +432,21 @@ export default function Calendar() {
                   const remainingEvents = totalEvents - eventsToShow;
                   
                   dayEvents.slice(0, eventsToShow).forEach((event, localIndex) => {
-                    // Calculate proper visual position: multi-day events first, then single-day
+                    // Use global position for multi-day events to maintain consistency across days
+                    // For single-day events, position them after all multi-day events in the day
                     let eventIndex;
                     if (!event.isSingleDay) {
-                      // Multi-day events: find position among multi-day events in this day
-                      const multiDayEventsInDay = dayEvents.filter(e => !e.isSingleDay);
-                      eventIndex = multiDayEventsInDay.findIndex(e => e.id === event.id);
+                      // Multi-day events: use global position for consistency
+                      eventIndex = globalEventPositions.get(event.id);
                     } else {
-                      // Single-day events: position after all multi-day events
-                      const multiDayCount = dayEvents.filter(e => !e.isSingleDay).length;
+                      // Single-day events: position after all multi-day events in this day
+                      const multiDayEventsInThisDay = dayEvents.filter(e => !e.isSingleDay);
+                      const maxMultiDayPosition = multiDayEventsInThisDay.length > 0 
+                        ? Math.max(...multiDayEventsInThisDay.map(e => globalEventPositions.get(e.id))) + 1
+                        : 0;
                       const singleDayEventsInDay = dayEvents.filter(e => e.isSingleDay);
                       const singleDayIndex = singleDayEventsInDay.findIndex(e => e.id === event.id);
-                      eventIndex = multiDayCount + singleDayIndex;
+                      eventIndex = maxMultiDayPosition + singleDayIndex;
                     }
                     const eventStart = new Date(event.startTime);
                     const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
