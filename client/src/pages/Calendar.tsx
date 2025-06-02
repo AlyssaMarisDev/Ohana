@@ -374,6 +374,13 @@ export default function Calendar() {
                     const primaryTag = event.permissionTags?.[0];
                     const tagInfo = primaryTag ? PREDEFINED_TAGS.find(t => t.name === primaryTag.tag) : null;
                     
+                    const eventColor = tagInfo?.color?.includes('red') ? 'red-500' :
+                      tagInfo?.color?.includes('blue') ? 'blue-500' :
+                      tagInfo?.color?.includes('green') ? 'green-500' :
+                      tagInfo?.color?.includes('purple') ? 'purple-500' :
+                      tagInfo?.color?.includes('orange') ? 'orange-500' :
+                      'gray-500';
+
                     allEventElements.push(
                       <div
                         key={`event-${event.id}`}
@@ -382,14 +389,12 @@ export default function Calendar() {
                           setEditingEvent(event);
                         }}
                         className={`
-                          absolute text-xs px-2 py-1 text-white font-medium cursor-pointer leading-tight rounded z-10
-                          ${tagInfo?.color?.includes('red') ? 'bg-red-500' :
-                            tagInfo?.color?.includes('blue') ? 'bg-blue-500' :
-                            tagInfo?.color?.includes('green') ? 'bg-green-500' :
-                            tagInfo?.color?.includes('purple') ? 'bg-purple-500' :
-                            tagInfo?.color?.includes('orange') ? 'bg-orange-500' :
-                            'bg-gray-500'}
+                          absolute text-xs px-2 py-1 font-medium cursor-pointer leading-tight rounded z-10
                           hover:opacity-80 transition-opacity
+                          ${event.isSingleDay 
+                            ? `text-gray-900 bg-transparent border-l-4 border-${eventColor}` 
+                            : `text-white bg-${eventColor}`
+                          }
                         `}
                         style={{
                           left: `${(startCol / 7) * 100}%`,
