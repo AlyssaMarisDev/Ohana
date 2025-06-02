@@ -166,7 +166,7 @@ export default function Calendar() {
       
       <main className="flex-1 overflow-hidden">
         {/* Calendar Header */}
-        <div className="bg-white border-b border-gray-200 p-4">
+        <div className="bg-white border-b border-gray-200 px-2 py-4">
           <div className="flex items-center justify-between mb-4">
             <Button
               variant="ghost"
@@ -275,7 +275,7 @@ export default function Calendar() {
         </div>
         
         {/* Selected Day Events */}
-        <div className="p-4">
+        <div className="px-2 py-4">
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
