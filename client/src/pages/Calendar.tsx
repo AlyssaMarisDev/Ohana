@@ -238,7 +238,7 @@ export default function Calendar() {
             </div>
             
             {/* Calendar Days Grid */}
-            <div className="grid grid-cols-7 relative">
+            <div className="grid grid-cols-7 relative" style={{ gridTemplateRows: `repeat(${Math.ceil(days.length / 7)}, minmax(110px, 130px))` }}>
               {/* Day cells without events */}
               {days.map((day, index) => {
                 const isCurrentMonth = isSameMonth(day, currentDate);
@@ -397,13 +397,14 @@ export default function Calendar() {
                           }
                         `}
                         style={{
-                          left: event.isSingleDay 
-                            ? `${(startCol / 7) * 100 + 0.25}%`  // Small left margin for single-day events
-                            : `${(startCol / 7) * 100}%`,        // Edge-to-edge for multi-day events
-                          width: event.isSingleDay 
-                            ? `${(event.spanCols / 7) * 100 - 0.5}%`  // Reduce width to account for margin
-                            : `${(event.spanCols / 7) * 100}%`,       // Full width for multi-day events
-                          top: `${startRow * 130 + 40 + (eventIndex * 25)}px`, // Unified spacing: 40px base offset + 25px per event
+                          gridColumn: event.isSingleDay 
+                            ? `${startCol + 1} / ${startCol + 2}`  // Single column for single-day events
+                            : `${startCol + 1} / ${startCol + event.spanCols + 1}`,  // Span multiple columns for multi-day events
+                          gridRow: `${startRow + 1}`,
+                          alignSelf: 'start',
+                          marginTop: `${40 + (eventIndex * 25)}px`,
+                          marginLeft: event.isSingleDay ? '2px' : '0px',  // Small left margin for single-day events
+                          marginRight: event.isSingleDay ? '2px' : '0px', // Small right margin for single-day events
                           height: '22px',
                           backgroundColor: event.isSingleDay ? 'transparent' : eventColor,
                           borderLeft: event.isSingleDay ? `4px solid ${eventColor}` : 'none'
