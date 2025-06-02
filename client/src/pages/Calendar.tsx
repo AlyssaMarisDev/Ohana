@@ -139,6 +139,26 @@ export default function Calendar() {
     return dayEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
   };
 
+  // Filter events to only show single-day events in individual cells
+  const getSingleDayEventsForDay = (day: Date) => {
+    const dayEvents = allEvents.filter(event => {
+      const eventStart = new Date(event.startTime);
+      const eventEnd = new Date(event.endTime);
+      const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+      const eventStartDate = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
+      const eventEndDate = new Date(eventEnd.getFullYear(), eventEnd.getMonth(), eventEnd.getDate());
+      
+      // Only include single-day events OR show multi-day events only on their start day
+      const isSingleDay = eventStartDate.getTime() === eventEndDate.getTime();
+      const isStartDay = dayStart.getTime() === eventStartDate.getTime();
+      
+      return (isSingleDay && dayStart.getTime() === eventStartDate.getTime()) || 
+             (!isSingleDay && isStartDay);
+    });
+
+    return dayEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  };
+
   const days = getDaysInMonth();
 
   if (householdsLoading) {
@@ -206,7 +226,7 @@ export default function Calendar() {
                 const isCurrentMonth = isSameMonth(day, currentDate);
                 const isSelected = isSameDay(day, selectedDate);
                 const isToday_ = isToday(day);
-                const dayEvents = getEventsForDay(day);
+                const dayEvents = getSingleDayEventsForDay(day);
                 const isWeekEnd = index % 7 === 6; // Last day of week
                 const isLastRow = index >= days.length - 7; // Last row
                 
@@ -231,6 +251,10 @@ export default function Calendar() {
                     <div className="flex-1 overflow-hidden space-y-1">
                       {dayEvents.slice(0, 3).map((event, eventIndex) => {
                         const eventStart = new Date(event.startTime);
+                        const eventEnd = new Date(event.endTime);
+                        const eventStartDate = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
+                        const eventEndDate = new Date(eventEnd.getFullYear(), eventEnd.getMonth(), eventEnd.getDate());
+                        const isMultiDay = eventStartDate.getTime() !== eventEndDate.getTime();
                         const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
                         const primaryTag = event.permissionTags?.[0];
                         const tagInfo = primaryTag ? PREDEFINED_TAGS.find(t => t.name === primaryTag.tag) : null;
@@ -243,7 +267,8 @@ export default function Calendar() {
                               setEditingEvent(event);
                             }}
                             className={`
-                              text-xs px-2 py-1 rounded text-white font-medium cursor-pointer leading-tight
+                              text-xs px-2 py-1 text-white font-medium cursor-pointer leading-tight relative
+                              ${isMultiDay ? 'rounded-l rounded-r-none' : 'rounded'}
                               ${tagInfo?.color?.includes('red') ? 'bg-red-500' :
                                 tagInfo?.color?.includes('blue') ? 'bg-blue-500' :
                                 tagInfo?.color?.includes('green') ? 'bg-green-500' :
@@ -252,10 +277,13 @@ export default function Calendar() {
                                 'bg-gray-500'}
                               hover:opacity-80 transition-opacity
                             `}
-                            title={`${event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')}`}
+                            title={`${event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')}${isMultiDay ? ` to ${format(eventEnd, 'MMM d h:mm a')}` : ''}`}
                           >
                             <div className="line-clamp-2 break-words">
                               {event.title}
+                              {isMultiDay && (
+                                <span className="text-xs opacity-75 ml-1">→</span>
+                              )}
                             </div>
                           </div>
                         );
