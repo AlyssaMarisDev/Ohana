@@ -123,8 +123,8 @@ export default function Calendar() {
     return eachDayOfInterval({ start: startDate, end: endDate });
   };
 
-  const hasEventsOnDay = (day: Date) => {
-    return allEvents.some(event => {
+  const getEventsForDay = (day: Date) => {
+    const dayEvents = allEvents.filter(event => {
       const eventStart = new Date(event.startTime);
       const eventEnd = new Date(event.endTime);
       const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate());
@@ -134,6 +134,9 @@ export default function Calendar() {
       // Check if this day falls within the event's timespan
       return dayStart >= eventStartDate && dayStart <= eventEndDate;
     });
+
+    // Sort events by start time
+    return dayEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
   };
 
   const days = getDaysInMonth();
@@ -198,24 +201,61 @@ export default function Calendar() {
               const isCurrentMonth = isSameMonth(day, currentDate);
               const isSelected = isSameDay(day, selectedDate);
               const isToday_ = isToday(day);
-              const hasEvents = hasEventsOnDay(day);
+              const dayEvents = getEventsForDay(day);
               
               return (
-                <button
+                <div
                   key={index}
                   onClick={() => setSelectedDate(day)}
                   className={`
-                    aspect-square flex flex-col items-center justify-center p-1 rounded-lg transition-colors relative
-                    ${isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}
-                    ${isSelected ? 'bg-primary text-white' : 'hover:bg-gray-100'}
-                    ${isToday_ && !isSelected ? 'bg-blue-50 text-blue-600 font-semibold' : ''}
+                    aspect-square flex flex-col p-1 rounded-lg transition-colors relative cursor-pointer min-h-[80px] border
+                    ${isCurrentMonth ? 'text-gray-900 bg-white border-gray-200' : 'text-gray-400 bg-gray-50 border-gray-100'}
+                    ${isSelected ? 'ring-2 ring-primary border-primary' : 'hover:bg-gray-50'}
+                    ${isToday_ && !isSelected ? 'bg-blue-50 border-blue-200' : ''}
                   `}
                 >
-                  <span className="text-sm">{format(day, "d")}</span>
-                  {hasEvents && (
-                    <div className={`absolute bottom-1 w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-primary'}`} />
-                  )}
-                </button>
+                  <div className={`text-sm font-medium mb-1 ${isToday_ ? 'text-blue-600' : ''}`}>
+                    {format(day, "d")}
+                  </div>
+                  
+                  <div className="flex-1 overflow-hidden space-y-0.5">
+                    {dayEvents.slice(0, 3).map((event, eventIndex) => {
+                      const eventStart = new Date(event.startTime);
+                      const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
+                      const primaryTag = event.permissionTags?.[0];
+                      const tagInfo = primaryTag ? PREDEFINED_TAGS.find(t => t.name === primaryTag.tag) : null;
+                      
+                      return (
+                        <div
+                          key={eventIndex}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingEvent(event);
+                          }}
+                          className={`
+                            text-xs px-1.5 py-0.5 rounded text-white font-medium truncate cursor-pointer
+                            ${tagInfo?.color?.includes('red') ? 'bg-red-500' :
+                              tagInfo?.color?.includes('blue') ? 'bg-blue-500' :
+                              tagInfo?.color?.includes('green') ? 'bg-green-500' :
+                              tagInfo?.color?.includes('purple') ? 'bg-purple-500' :
+                              tagInfo?.color?.includes('orange') ? 'bg-orange-500' :
+                              'bg-gray-500'}
+                            hover:opacity-80 transition-opacity
+                          `}
+                          title={`${event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')}`}
+                        >
+                          {isAllDay ? event.title : `${format(eventStart, 'h:mm')} ${event.title}`}
+                        </div>
+                      );
+                    })}
+                    
+                    {dayEvents.length > 3 && (
+                      <div className="text-xs text-gray-500 font-medium">
+                        +{dayEvents.length - 3} more
+                      </div>
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
