@@ -273,7 +273,7 @@ export default function Calendar() {
                     <div style={{ height: '30px' }}></div>
                     
                     {/* Single-day events */}
-                    <div className="flex-1 overflow-hidden space-y-1">
+                    <div className="flex-1 overflow-hidden space-y-1 -mx-2">
                       {dayEvents.slice(0, 2).map((event, eventIndex) => {
                         const eventStart = new Date(event.startTime);
                         const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
@@ -288,7 +288,7 @@ export default function Calendar() {
                               setEditingEvent(event);
                             }}
                             className={`
-                              text-xs px-2 py-1 text-white font-medium cursor-pointer leading-tight rounded
+                              text-xs px-2 py-1 text-white font-medium cursor-pointer leading-tight rounded mx-2
                               ${tagInfo?.color?.includes('red') ? 'bg-red-500' :
                                 tagInfo?.color?.includes('blue') ? 'bg-blue-500' :
                                 tagInfo?.color?.includes('green') ? 'bg-green-500' :
