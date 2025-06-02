@@ -237,7 +237,7 @@ export class GoogleCalendarService {
 
     try {
       // Create a unique channel ID for this user
-      const channelId = `familysync-${userId}-${Date.now()}`;
+      const channelId = `ohana-${userId}-${Date.now()}`;
       const webhookUrl = `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'http://localhost:5000'}/api/google/webhook`;
 
       const response = await calendar.events.watch({

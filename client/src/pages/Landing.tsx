@@ -14,7 +14,7 @@ export default function Landing() {
         <div className="text-center">
           <div className="flex items-center justify-center space-x-2 mb-2">
             <Heart className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold text-gray-900">FamilySync</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Ohana</h1>
           </div>
           <p className="text-gray-600">Household management for modern relationships</p>
         </div>
