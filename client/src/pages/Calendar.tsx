@@ -237,22 +237,26 @@ export default function Calendar() {
               ))}
             </div>
             
-            {/* Calendar Days */}
-            <div className="grid grid-cols-7">
+            {/* Calendar Days Grid */}
+            <div className="grid grid-cols-7 relative">
+              {/* Day cells without events */}
               {days.map((day, index) => {
                 const isCurrentMonth = isSameMonth(day, currentDate);
                 const isSelected = isSameDay(day, selectedDate);
                 const isToday_ = isToday(day);
-                const dayEvents = getEventsForDay(day);
-                const isWeekEnd = index % 7 === 6; // Last day of week
-                const isLastRow = index >= days.length - 7; // Last row
+                const dayEvents = getEventsForDay(day).filter(event => {
+                  const displayInfo = getEventDisplayInfo(event, day);
+                  return displayInfo.isSingleDay; // Only show single-day events in cells
+                });
+                const isWeekEnd = index % 7 === 6;
+                const isLastRow = index >= days.length - 7;
                 
                 return (
                   <div
                     key={index}
                     onClick={() => setSelectedDate(day)}
                     className={`
-                      flex flex-col p-2 transition-colors relative cursor-pointer
+                      flex flex-col p-2 transition-colors cursor-pointer
                       min-h-[110px] sm:min-h-[130px] h-[110px] sm:h-[130px]
                       ${!isWeekEnd ? 'border-r border-gray-200' : ''}
                       ${!isLastRow ? 'border-b border-gray-200' : ''}
@@ -265,16 +269,16 @@ export default function Calendar() {
                       {format(day, "d")}
                     </div>
                     
+                    {/* Reserve space for multi-day events */}
+                    <div style={{ height: '30px' }}></div>
+                    
+                    {/* Single-day events */}
                     <div className="flex-1 overflow-hidden space-y-1">
-                      {dayEvents.slice(0, 3).map((event, eventIndex) => {
+                      {dayEvents.slice(0, 2).map((event, eventIndex) => {
                         const eventStart = new Date(event.startTime);
                         const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
                         const primaryTag = event.permissionTags?.[0];
                         const tagInfo = primaryTag ? PREDEFINED_TAGS.find(t => t.name === primaryTag.tag) : null;
-                        const displayInfo = getEventDisplayInfo(event, day);
-                        
-                        // Only render if this is the start day for multi-day events, or if it's a single-day event
-                        if (!displayInfo.shouldDisplay) return null;
                         
                         return (
                           <div
@@ -284,8 +288,7 @@ export default function Calendar() {
                               setEditingEvent(event);
                             }}
                             className={`
-                              text-xs px-2 py-1 text-white font-medium cursor-pointer leading-tight relative
-                              ${displayInfo.isSingleDay ? 'rounded' : 'rounded-l'}
+                              text-xs px-2 py-1 text-white font-medium cursor-pointer leading-tight rounded
                               ${tagInfo?.color?.includes('red') ? 'bg-red-500' :
                                 tagInfo?.color?.includes('blue') ? 'bg-blue-500' :
                                 tagInfo?.color?.includes('green') ? 'bg-green-500' :
@@ -294,28 +297,89 @@ export default function Calendar() {
                                 'bg-gray-500'}
                               hover:opacity-80 transition-opacity
                             `}
-                            style={{
-                              // For multi-day events, extend the width to cover additional days
-                              width: displayInfo.isSingleDay ? '100%' : `${displayInfo.daysToSpan * 100}%`,
-                              zIndex: displayInfo.isSingleDay ? 1 : 10
-                            }}
-                            title={`${event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')}${!displayInfo.isSingleDay ? ` to ${format(new Date(event.endTime), 'MMM d h:mm a')}` : ''}`}
+                            title={`${event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')}`}
                           >
                             <div className="line-clamp-2 break-words">
                               {event.title}
-                              {!displayInfo.isSingleDay && (
-                                <span className="text-xs opacity-75 ml-1">→</span>
-                              )}
                             </div>
                           </div>
                         );
                       })}
                       
-                      {dayEvents.length > 3 && (
+                      {dayEvents.length > 2 && (
                         <div className="text-xs text-gray-500 font-medium px-1">
-                          +{dayEvents.length - 3} more
+                          +{dayEvents.length - 2} more
                         </div>
                       )}
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {/* Multi-day events overlay */}
+              {allEvents.map((event, eventIndex) => {
+                const eventStart = new Date(event.startTime);
+                const eventEnd = new Date(event.endTime);
+                const eventStartDate = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
+                const eventEndDate = new Date(eventEnd.getFullYear(), eventEnd.getMonth(), eventEnd.getDate());
+                const isSingleDay = eventStartDate.getTime() === eventEndDate.getTime();
+                
+                if (isSingleDay) return null; // Skip single-day events, they're handled in cells
+                
+                // Calculate position in the grid
+                const startDayIndex = days.findIndex(day => {
+                  const dayDate = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+                  return dayDate.getTime() === eventStartDate.getTime();
+                });
+                
+                if (startDayIndex === -1) return null; // Event not in current month view
+                
+                const endDayIndex = days.findIndex(day => {
+                  const dayDate = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+                  return dayDate.getTime() === eventEndDate.getTime();
+                });
+                
+                const actualEndIndex = endDayIndex === -1 ? days.length - 1 : endDayIndex;
+                const startRow = Math.floor(startDayIndex / 7);
+                const endRow = Math.floor(actualEndIndex / 7);
+                const startCol = startDayIndex % 7;
+                const endCol = actualEndIndex % 7;
+                
+                // For now, only handle single-week spanning events
+                if (startRow !== endRow) return null;
+                
+                const spanCols = endCol - startCol + 1;
+                const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
+                const primaryTag = event.permissionTags?.[0];
+                const tagInfo = primaryTag ? PREDEFINED_TAGS.find(t => t.name === primaryTag.tag) : null;
+                
+                return (
+                  <div
+                    key={`multi-${eventIndex}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingEvent(event);
+                    }}
+                    className={`
+                      absolute text-xs px-2 py-1 text-white font-medium cursor-pointer leading-tight rounded z-10
+                      ${tagInfo?.color?.includes('red') ? 'bg-red-500' :
+                        tagInfo?.color?.includes('blue') ? 'bg-blue-500' :
+                        tagInfo?.color?.includes('green') ? 'bg-green-500' :
+                        tagInfo?.color?.includes('purple') ? 'bg-purple-500' :
+                        tagInfo?.color?.includes('orange') ? 'bg-orange-500' :
+                        'bg-gray-500'}
+                      hover:opacity-80 transition-opacity
+                    `}
+                    style={{
+                      left: `${(startCol / 7) * 100}%`,
+                      width: `${(spanCols / 7) * 100}%`,
+                      top: `${startRow * 130 + 40}px`, // 130px per row + 40px offset for day number
+                      height: '22px'
+                    }}
+                    title={`${event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')} to ${format(eventEnd, 'MMM d h:mm a')}`}
+                  >
+                    <div className="truncate">
+                      {event.title}
                     </div>
                   </div>
                 );
