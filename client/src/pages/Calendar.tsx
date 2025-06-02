@@ -442,7 +442,7 @@ export default function Calendar() {
                   eventsToRender.push(...singleDayEventsInThisDay.slice(0, singleDayEventsToShow));
                   
                   // Debug for specific problematic day
-                  if (dateKey.includes('2025-06-16')) {
+                  if (dateKey === '2025-06-16') {
                     console.log(`Day 16: multiDay=${multiDayCount}, singleDayToShow=${singleDayEventsToShow}, total=${totalEvents}, remaining=${remainingEvents}`);
                   }
                   
