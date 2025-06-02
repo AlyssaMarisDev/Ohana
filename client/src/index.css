@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Calendar grid alignment fixes */
+.calendar-grid {
+  /* Ensure consistent grid spacing */
+  gap: 0;
+}
+
+.calendar-day-cell {
+  /* Ensure consistent cell height */
+  box-sizing: border-box;
+}
+
 :root {
   --background: 210 11% 98%; /* #F8FAFC */
   --foreground: 210 24% 16%; /* #1E293B */
