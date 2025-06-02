@@ -190,82 +190,90 @@ export default function Calendar() {
           </div>
           
           {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-1 mb-4">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-center text-xs font-medium text-gray-600 py-2">
-                {day}
-              </div>
-            ))}
-            
-            {days.map((day, index) => {
-              const isCurrentMonth = isSameMonth(day, currentDate);
-              const isSelected = isSameDay(day, selectedDate);
-              const isToday_ = isToday(day);
-              const dayEvents = getEventsForDay(day);
-              
-              return (
-                <div
-                  key={index}
-                  onClick={() => setSelectedDate(day)}
-                  className={`
-                    flex flex-col p-1 sm:p-2 rounded-lg transition-colors relative cursor-pointer border
-                    min-h-[100px] sm:min-h-[120px] h-[100px] sm:h-[120px]
-                    ${isCurrentMonth ? 'text-gray-900 bg-white border-gray-200' : 'text-gray-400 bg-gray-50 border-gray-100'}
-                    ${isSelected ? 'ring-2 ring-primary border-primary' : 'hover:bg-gray-50'}
-                    ${isToday_ && !isSelected ? 'bg-blue-50 border-blue-200' : ''}
-                  `}
-                >
-                  <div className={`text-sm font-medium mb-1 ${isToday_ ? 'text-blue-600' : ''}`}>
-                    {format(day, "d")}
-                  </div>
-                  
-                  <div className="flex-1 overflow-hidden space-y-1">
-                    {dayEvents.slice(0, 2).map((event, eventIndex) => {
-                      const eventStart = new Date(event.startTime);
-                      const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
-                      const primaryTag = event.permissionTags?.[0];
-                      const tagInfo = primaryTag ? PREDEFINED_TAGS.find(t => t.name === primaryTag.tag) : null;
-                      
-                      return (
-                        <div
-                          key={eventIndex}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingEvent(event);
-                          }}
-                          className={`
-                            text-xs px-1.5 py-1 rounded text-white font-medium truncate cursor-pointer leading-tight
-                            ${tagInfo?.color?.includes('red') ? 'bg-red-500' :
-                              tagInfo?.color?.includes('blue') ? 'bg-blue-500' :
-                              tagInfo?.color?.includes('green') ? 'bg-green-500' :
-                              tagInfo?.color?.includes('purple') ? 'bg-purple-500' :
-                              tagInfo?.color?.includes('orange') ? 'bg-orange-500' :
-                              'bg-gray-500'}
-                            hover:opacity-80 transition-opacity
-                          `}
-                          title={`${event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')}`}
-                        >
-                          <div className="truncate">
-                            {isAllDay ? event.title : event.title}
-                          </div>
-                          {!isAllDay && (
-                            <div className="text-xs opacity-90 truncate">
-                              {format(eventStart, 'h:mm a')}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                    
-                    {dayEvents.length > 2 && (
-                      <div className="text-xs text-gray-500 font-medium px-1">
-                        +{dayEvents.length - 2} more
-                      </div>
-                    )}
-                  </div>
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            {/* Day Headers */}
+            <div className="grid grid-cols-7 bg-gray-50">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="text-center text-xs font-medium text-gray-600 py-3 border-r border-gray-200 last:border-r-0">
+                  {day}
                 </div>
-              );
-            })}
+              ))}
+            </div>
+            
+            {/* Calendar Days */}
+            <div className="grid grid-cols-7">
+              {days.map((day, index) => {
+                const isCurrentMonth = isSameMonth(day, currentDate);
+                const isSelected = isSameDay(day, selectedDate);
+                const isToday_ = isToday(day);
+                const dayEvents = getEventsForDay(day);
+                const isWeekEnd = index % 7 === 6; // Last day of week
+                const isLastRow = index >= days.length - 7; // Last row
+                
+                return (
+                  <div
+                    key={index}
+                    onClick={() => setSelectedDate(day)}
+                    className={`
+                      flex flex-col p-2 transition-colors relative cursor-pointer
+                      min-h-[110px] sm:min-h-[130px] h-[110px] sm:h-[130px]
+                      ${!isWeekEnd ? 'border-r border-gray-200' : ''}
+                      ${!isLastRow ? 'border-b border-gray-200' : ''}
+                      ${isCurrentMonth ? 'text-gray-900 bg-white' : 'text-gray-400 bg-gray-50'}
+                      ${isSelected ? 'bg-primary/5 ring-2 ring-primary ring-inset' : 'hover:bg-gray-50'}
+                      ${isToday_ && !isSelected ? 'bg-blue-50' : ''}
+                    `}
+                  >
+                    <div className={`text-sm font-medium mb-2 ${isToday_ ? 'text-blue-600' : ''}`}>
+                      {format(day, "d")}
+                    </div>
+                    
+                    <div className="flex-1 overflow-hidden space-y-1">
+                      {dayEvents.slice(0, 3).map((event, eventIndex) => {
+                        const eventStart = new Date(event.startTime);
+                        const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
+                        const primaryTag = event.permissionTags?.[0];
+                        const tagInfo = primaryTag ? PREDEFINED_TAGS.find(t => t.name === primaryTag.tag) : null;
+                        
+                        return (
+                          <div
+                            key={eventIndex}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingEvent(event);
+                            }}
+                            className={`
+                              text-xs px-2 py-1 rounded text-white font-medium truncate cursor-pointer leading-tight
+                              ${tagInfo?.color?.includes('red') ? 'bg-red-500' :
+                                tagInfo?.color?.includes('blue') ? 'bg-blue-500' :
+                                tagInfo?.color?.includes('green') ? 'bg-green-500' :
+                                tagInfo?.color?.includes('purple') ? 'bg-purple-500' :
+                                tagInfo?.color?.includes('orange') ? 'bg-orange-500' :
+                                'bg-gray-500'}
+                              hover:opacity-80 transition-opacity
+                            `}
+                            title={`${event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')}`}
+                          >
+                            <div className="truncate">
+                              {!isAllDay && (
+                                <span className="opacity-90">{format(eventStart, 'h:mm')} </span>
+                              )}
+                              {event.title}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      
+                      {dayEvents.length > 3 && (
+                        <div className="text-xs text-gray-500 font-medium px-1">
+                          +{dayEvents.length - 3} more
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
         
