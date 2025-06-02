@@ -441,6 +441,19 @@ export default function Calendar() {
                   // Add single-day events up to available slots
                   eventsToRender.push(...singleDayEventsInThisDay.slice(0, singleDayEventsToShow));
                   
+                  // Debug logging for day 16
+                  if (dateKey === '2025-06-16') {
+                    console.log('Day 16 debug:', {
+                      totalEvents,
+                      multiDayCount,
+                      availableSlotsForSingleDay,
+                      singleDayEventsToShow,
+                      actualEventsToShow,
+                      remainingEvents,
+                      eventsToRenderLength: eventsToRender.length
+                    });
+                  }
+                  
                   eventsToRender.forEach((event, localIndex) => {
                     // Use global position for multi-day events to maintain consistency across days
                     // For single-day events, position them after all multi-day events in the day
