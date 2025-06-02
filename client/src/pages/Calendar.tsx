@@ -398,11 +398,11 @@ export default function Calendar() {
                         `}
                         style={{
                           left: event.isSingleDay 
-                            ? `${(startCol / 7) * 100 + 0.5}%`  // Small left margin for single-day events
-                            : `${(startCol / 7) * 100}%`,       // Edge-to-edge for multi-day events
+                            ? `${(startCol / 7) * 100 + 0.25}%`  // Small left margin for single-day events
+                            : `${(startCol / 7) * 100}%`,        // Edge-to-edge for multi-day events
                           width: event.isSingleDay 
-                            ? `${(event.spanCols / 7) * 100 - 1}%`  // Reduce width to account for margin
-                            : `${(event.spanCols / 7) * 100}%`,     // Full width for multi-day events
+                            ? `${(event.spanCols / 7) * 100 - 0.5}%`  // Reduce width to account for margin
+                            : `${(event.spanCols / 7) * 100}%`,       // Full width for multi-day events
                           top: `${startRow * 130 + 40 + (eventIndex * 25)}px`, // Unified spacing: 40px base offset + 25px per event
                           height: '22px',
                           backgroundColor: event.isSingleDay ? 'transparent' : eventColor,
