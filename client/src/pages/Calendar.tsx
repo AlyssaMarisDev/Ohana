@@ -374,12 +374,12 @@ export default function Calendar() {
                     const primaryTag = event.permissionTags?.[0];
                     const tagInfo = primaryTag ? PREDEFINED_TAGS.find(t => t.name === primaryTag.tag) : null;
                     
-                    const eventColor = tagInfo?.color?.includes('red') ? 'red-500' :
-                      tagInfo?.color?.includes('blue') ? 'blue-500' :
-                      tagInfo?.color?.includes('green') ? 'green-500' :
-                      tagInfo?.color?.includes('purple') ? 'purple-500' :
-                      tagInfo?.color?.includes('orange') ? 'orange-500' :
-                      'gray-500';
+                    const eventColor = tagInfo?.color?.includes('red') ? '#ef4444' :
+                      tagInfo?.color?.includes('blue') ? '#3b82f6' :
+                      tagInfo?.color?.includes('green') ? '#10b981' :
+                      tagInfo?.color?.includes('purple') ? '#8b5cf6' :
+                      tagInfo?.color?.includes('orange') ? '#f97316' :
+                      '#6b7280';
 
                     allEventElements.push(
                       <div
@@ -392,15 +392,17 @@ export default function Calendar() {
                           absolute text-xs px-2 py-1 font-medium cursor-pointer leading-tight rounded z-10
                           hover:opacity-80 transition-opacity
                           ${event.isSingleDay 
-                            ? `text-gray-900 bg-transparent border-l-4 border-${eventColor}` 
-                            : `text-white bg-${eventColor}`
+                            ? 'text-gray-900 bg-transparent' 
+                            : 'text-white'
                           }
                         `}
                         style={{
                           left: `${(startCol / 7) * 100}%`,
                           width: `${(event.spanCols / 7) * 100}%`,
                           top: `${startRow * 130 + 40 + (eventIndex * 25)}px`, // Unified spacing: 40px base offset + 25px per event
-                          height: '22px'
+                          height: '22px',
+                          backgroundColor: event.isSingleDay ? 'transparent' : eventColor,
+                          borderLeft: event.isSingleDay ? `4px solid ${eventColor}` : 'none'
                         }}
                         title={event.isSingleDay 
                           ? `${event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')}`
