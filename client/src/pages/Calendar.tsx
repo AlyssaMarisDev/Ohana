@@ -279,89 +279,72 @@ export default function Calendar() {
               })}
               
               {/* All events overlay */}
-              {allEvents.map((event, eventIndex) => {
-                const eventStart = new Date(event.startTime);
-                const eventEnd = new Date(event.endTime);
-                const eventStartDate = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
-                const eventEndDate = new Date(eventEnd.getFullYear(), eventEnd.getMonth(), eventEnd.getDate());
-                const isSingleDay = eventStartDate.getTime() === eventEndDate.getTime();
+              {(() => {
+                // Separate multi-day and single-day events
+                const multiDayEvents = [];
+                const singleDayEventsByDate = new Map();
                 
-                // Calculate position in the grid
-                const startDayIndex = days.findIndex(day => {
-                  const dayDate = new Date(day.getFullYear(), day.getMonth(), day.getDate());
-                  return dayDate.getTime() === eventStartDate.getTime();
+                allEvents.forEach(event => {
+                  const eventStart = new Date(event.startTime);
+                  const eventEnd = new Date(event.endTime);
+                  const eventStartDate = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
+                  const eventEndDate = new Date(eventEnd.getFullYear(), eventEnd.getMonth(), eventEnd.getDate());
+                  const isSingleDay = eventStartDate.getTime() === eventEndDate.getTime();
+                  
+                  if (isSingleDay) {
+                    const dateKey = eventStartDate.getTime();
+                    if (!singleDayEventsByDate.has(dateKey)) {
+                      singleDayEventsByDate.set(dateKey, []);
+                    }
+                    singleDayEventsByDate.get(dateKey).push(event);
+                  } else {
+                    multiDayEvents.push(event);
+                  }
                 });
                 
-                if (startDayIndex === -1) return null; // Event not in current month view
+                // Sort single-day events by time within each day
+                singleDayEventsByDate.forEach(dayEvents => {
+                  dayEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+                });
                 
-                const startRow = Math.floor(startDayIndex / 7);
-                const startCol = startDayIndex % 7;
-                const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
-                const primaryTag = event.permissionTags?.[0];
-                const tagInfo = primaryTag ? PREDEFINED_TAGS.find(t => t.name === primaryTag.tag) : null;
+                const allEventElements = [];
                 
-                if (isSingleDay) {
-                  // Single-day events - stack them vertically within their day cell
-                  const dayEvents = allEvents.filter(e => {
-                    const eStart = new Date(e.startTime);
-                    const eEnd = new Date(e.endTime);
-                    const eStartDate = new Date(eStart.getFullYear(), eStart.getMonth(), eStart.getDate());
-                    const eEndDate = new Date(eEnd.getFullYear(), eEnd.getMonth(), eEnd.getDate());
-                    const eIsSingleDay = eStartDate.getTime() === eEndDate.getTime();
-                    return eIsSingleDay && eStartDate.getTime() === eventStartDate.getTime();
+                // Render multi-day events first (they appear at the top)
+                multiDayEvents.forEach((event, eventIndex) => {
+                  const eventStart = new Date(event.startTime);
+                  const eventEnd = new Date(event.endTime);
+                  const eventStartDate = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
+                  const eventEndDate = new Date(eventEnd.getFullYear(), eventEnd.getMonth(), eventEnd.getDate());
+                  
+                  const startDayIndex = days.findIndex(day => {
+                    const dayDate = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+                    return dayDate.getTime() === eventStartDate.getTime();
                   });
                   
-                  const eventIndexInDay = dayEvents.findIndex(e => e.id === event.id);
+                  if (startDayIndex === -1) return; // Event not in current month view
                   
-                  return (
-                    <div
-                      key={`single-${eventIndex}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingEvent(event);
-                      }}
-                      className={`
-                        absolute text-xs px-2 py-1 text-white font-medium cursor-pointer leading-tight rounded z-10
-                        ${tagInfo?.color?.includes('red') ? 'bg-red-500' :
-                          tagInfo?.color?.includes('blue') ? 'bg-blue-500' :
-                          tagInfo?.color?.includes('green') ? 'bg-green-500' :
-                          tagInfo?.color?.includes('purple') ? 'bg-purple-500' :
-                          tagInfo?.color?.includes('orange') ? 'bg-orange-500' :
-                          'bg-gray-500'}
-                        hover:opacity-80 transition-opacity
-                      `}
-                      style={{
-                        left: `${(startCol / 7) * 100}%`, // No margin - edge to edge
-                        width: `${(1 / 7) * 100}%`, // Full day width - edge to edge
-                        top: `${startRow * 130 + 70 + (eventIndexInDay * 25)}px`, // 130px per row + 70px offset + stacking
-                        height: '22px'
-                      }}
-                      title={`${event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')}`}
-                    >
-                      <div className="truncate">
-                        {event.title}
-                      </div>
-                    </div>
-                  );
-                } else {
-                  // Multi-day events
                   const endDayIndex = days.findIndex(day => {
                     const dayDate = new Date(day.getFullYear(), day.getMonth(), day.getDate());
                     return dayDate.getTime() === eventEndDate.getTime();
                   });
                   
                   const actualEndIndex = endDayIndex === -1 ? days.length - 1 : endDayIndex;
+                  const startRow = Math.floor(startDayIndex / 7);
                   const endRow = Math.floor(actualEndIndex / 7);
+                  const startCol = startDayIndex % 7;
                   const endCol = actualEndIndex % 7;
                   
                   // For now, only handle single-week spanning events
-                  if (startRow !== endRow) return null;
+                  if (startRow !== endRow) return;
                   
                   const spanCols = endCol - startCol + 1;
+                  const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
+                  const primaryTag = event.permissionTags?.[0];
+                  const tagInfo = primaryTag ? PREDEFINED_TAGS.find(t => t.name === primaryTag.tag) : null;
                   
-                  return (
+                  allEventElements.push(
                     <div
-                      key={`multi-${eventIndex}`}
+                      key={`multi-${event.id}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         setEditingEvent(event);
@@ -389,8 +372,62 @@ export default function Calendar() {
                       </div>
                     </div>
                   );
-                }
-              })}
+                });
+                
+                // Render single-day events (sorted by time within each day)
+                singleDayEventsByDate.forEach((dayEvents, dateKey) => {
+                  const eventStartDate = new Date(dateKey);
+                  const startDayIndex = days.findIndex(day => {
+                    const dayDate = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+                    return dayDate.getTime() === eventStartDate.getTime();
+                  });
+                  
+                  if (startDayIndex === -1) return; // Event not in current month view
+                  
+                  const startRow = Math.floor(startDayIndex / 7);
+                  const startCol = startDayIndex % 7;
+                  
+                  dayEvents.forEach((event, eventIndexInDay) => {
+                    const eventStart = new Date(event.startTime);
+                    const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
+                    const primaryTag = event.permissionTags?.[0];
+                    const tagInfo = primaryTag ? PREDEFINED_TAGS.find(t => t.name === primaryTag.tag) : null;
+                    
+                    allEventElements.push(
+                      <div
+                        key={`single-${event.id}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingEvent(event);
+                        }}
+                        className={`
+                          absolute text-xs px-2 py-1 text-white font-medium cursor-pointer leading-tight rounded z-10
+                          ${tagInfo?.color?.includes('red') ? 'bg-red-500' :
+                            tagInfo?.color?.includes('blue') ? 'bg-blue-500' :
+                            tagInfo?.color?.includes('green') ? 'bg-green-500' :
+                            tagInfo?.color?.includes('purple') ? 'bg-purple-500' :
+                            tagInfo?.color?.includes('orange') ? 'bg-orange-500' :
+                            'bg-gray-500'}
+                          hover:opacity-80 transition-opacity
+                        `}
+                        style={{
+                          left: `${(startCol / 7) * 100}%`,
+                          width: `${(1 / 7) * 100}%`,
+                          top: `${startRow * 130 + 70 + (eventIndexInDay * 25)}px`, // 130px per row + 70px offset + consistent 25px spacing
+                          height: '22px'
+                        }}
+                        title={`${event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')}`}
+                      >
+                        <div className="truncate">
+                          {event.title}
+                        </div>
+                      </div>
+                    );
+                  });
+                });
+                
+                return allEventElements;
+              })()}
             </div>
           </div>
         </div>
