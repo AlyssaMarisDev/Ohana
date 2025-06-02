@@ -357,29 +357,44 @@ export default function Calendar() {
                 
                 const allEventElements = [];
                 
-                // Create a global event index mapping to handle overlapping multi-day events
+                // Create proper visual hierarchy: multi-day events on top, then single-day events
                 const globalEventPositions = new Map();
                 
-                // Collect all unique events and sort them by start time
-                const allUniqueEvents = [];
+                // Collect all unique events and separate by type
+                const allMultiDayEvents = [];
+                const allSingleDayEvents = [];
+                const seenEvents = new Set();
+                
                 eventsByDay.forEach((dayEvents) => {
                   dayEvents.forEach((event) => {
-                    if (!globalEventPositions.has(event.id)) {
-                      allUniqueEvents.push(event);
-                      globalEventPositions.set(event.id, true); // Mark as seen
+                    if (!seenEvents.has(event.id)) {
+                      seenEvents.add(event.id);
+                      if (event.isSingleDay) {
+                        allSingleDayEvents.push(event);
+                      } else {
+                        allMultiDayEvents.push(event);
+                      }
                     }
                   });
                 });
                 
-                // Sort all events by start time (earlier events get lower indices = higher visual position)
-                allUniqueEvents.sort((a, b) => {
+                // Sort multi-day events by start time
+                allMultiDayEvents.sort((a, b) => {
                   return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
                 });
                 
-                // Assign global positions based on chronological order
-                globalEventPositions.clear();
-                allUniqueEvents.forEach((event, index) => {
-                  globalEventPositions.set(event.id, index);
+                // Sort single-day events by start time  
+                allSingleDayEvents.sort((a, b) => {
+                  return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+                });
+                
+                // Assign positions: multi-day events first (0, 1, 2...), then single-day events
+                let positionIndex = 0;
+                allMultiDayEvents.forEach((event) => {
+                  globalEventPositions.set(event.id, positionIndex++);
+                });
+                allSingleDayEvents.forEach((event) => {
+                  globalEventPositions.set(event.id, positionIndex++);
                 });
 
                 // Render all events with unified spacing and overflow handling
