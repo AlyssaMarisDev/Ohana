@@ -357,7 +357,7 @@ export default function Calendar() {
                 
                 const allEventElements = [];
                 
-                // Render all events with unified spacing
+                // Render all events with unified spacing and overflow handling
                 eventsByDay.forEach((dayEvents, dateKey) => {
                   const eventStartDate = new Date(dateKey);
                   const startDayIndex = days.findIndex(day => {
@@ -370,7 +370,17 @@ export default function Calendar() {
                   const startRow = Math.floor(startDayIndex / 7);
                   const startCol = startDayIndex % 7;
                   
-                  dayEvents.forEach((event, eventIndex) => {
+                  // Determine max events based on screen size
+                  const maxEventsLarge = 3;
+                  const maxEventsSmall = 2;
+                  const isLargeScreen = window.innerWidth >= 640;
+                  const maxEvents = isLargeScreen ? maxEventsLarge : maxEventsSmall;
+                  
+                  const totalEvents = dayEvents.length;
+                  const eventsToShow = Math.min(totalEvents, maxEvents);
+                  const remainingEvents = totalEvents - eventsToShow;
+                  
+                  dayEvents.slice(0, eventsToShow).forEach((event, eventIndex) => {
                     const eventStart = new Date(event.startTime);
                     const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
                     const primaryTag = event.permissionTags?.[0];
@@ -422,6 +432,32 @@ export default function Calendar() {
                       </div>
                     );
                   });
+                  
+                  // Add "+X more" indicator if there are remaining events
+                  if (remainingEvents > 0) {
+                    allEventElements.push(
+                      <div
+                        key={`more-events-${dateKey}`}
+                        className="absolute text-xs text-gray-600 font-medium cursor-pointer hover:text-gray-800"
+                        style={{
+                          position: 'absolute',
+                          left: `${(startCol / 7) * 100 + 0.25}%`,
+                          width: `${(1 / 7) * 100 - 0.5}%`,
+                          top: `calc(${startRow * (100 / Math.ceil(days.length / 7))}% + 30px + ${eventsToShow * 25}px)`,
+                          height: '18px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          paddingLeft: '6px'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedDate(eventStartDate);
+                        }}
+                      >
+                        +{remainingEvents} more
+                      </div>
+                    );
+                  }
                 });
                 
                 return allEventElements;
