@@ -208,7 +208,8 @@ export default function Calendar() {
                   key={index}
                   onClick={() => setSelectedDate(day)}
                   className={`
-                    aspect-square flex flex-col p-1 rounded-lg transition-colors relative cursor-pointer min-h-[80px] border
+                    flex flex-col p-1 sm:p-2 rounded-lg transition-colors relative cursor-pointer border
+                    min-h-[100px] sm:min-h-[120px] h-[100px] sm:h-[120px]
                     ${isCurrentMonth ? 'text-gray-900 bg-white border-gray-200' : 'text-gray-400 bg-gray-50 border-gray-100'}
                     ${isSelected ? 'ring-2 ring-primary border-primary' : 'hover:bg-gray-50'}
                     ${isToday_ && !isSelected ? 'bg-blue-50 border-blue-200' : ''}
@@ -218,8 +219,8 @@ export default function Calendar() {
                     {format(day, "d")}
                   </div>
                   
-                  <div className="flex-1 overflow-hidden space-y-0.5">
-                    {dayEvents.slice(0, 3).map((event, eventIndex) => {
+                  <div className="flex-1 overflow-hidden space-y-1">
+                    {dayEvents.slice(0, 2).map((event, eventIndex) => {
                       const eventStart = new Date(event.startTime);
                       const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
                       const primaryTag = event.permissionTags?.[0];
@@ -233,7 +234,7 @@ export default function Calendar() {
                             setEditingEvent(event);
                           }}
                           className={`
-                            text-xs px-1.5 py-0.5 rounded text-white font-medium truncate cursor-pointer
+                            text-xs px-1.5 py-1 rounded text-white font-medium truncate cursor-pointer leading-tight
                             ${tagInfo?.color?.includes('red') ? 'bg-red-500' :
                               tagInfo?.color?.includes('blue') ? 'bg-blue-500' :
                               tagInfo?.color?.includes('green') ? 'bg-green-500' :
@@ -244,14 +245,21 @@ export default function Calendar() {
                           `}
                           title={`${event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')}`}
                         >
-                          {isAllDay ? event.title : `${format(eventStart, 'h:mm')} ${event.title}`}
+                          <div className="truncate">
+                            {isAllDay ? event.title : event.title}
+                          </div>
+                          {!isAllDay && (
+                            <div className="text-xs opacity-90 truncate">
+                              {format(eventStart, 'h:mm a')}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
                     
-                    {dayEvents.length > 3 && (
-                      <div className="text-xs text-gray-500 font-medium">
-                        +{dayEvents.length - 3} more
+                    {dayEvents.length > 2 && (
+                      <div className="text-xs text-gray-500 font-medium px-1">
+                        +{dayEvents.length - 2} more
                       </div>
                     )}
                   </div>
