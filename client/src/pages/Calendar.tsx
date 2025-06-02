@@ -432,8 +432,19 @@ export default function Calendar() {
                   const remainingEvents = totalEvents - eventsToShow;
                   
                   dayEvents.slice(0, eventsToShow).forEach((event, localIndex) => {
-                    // Use global position for consistent vertical stacking
-                    const eventIndex = globalEventPositions.get(event.id) % maxEvents;
+                    // Calculate proper visual position: multi-day events first, then single-day
+                    let eventIndex;
+                    if (!event.isSingleDay) {
+                      // Multi-day events: find position among multi-day events in this day
+                      const multiDayEventsInDay = dayEvents.filter(e => !e.isSingleDay);
+                      eventIndex = multiDayEventsInDay.findIndex(e => e.id === event.id);
+                    } else {
+                      // Single-day events: position after all multi-day events
+                      const multiDayCount = dayEvents.filter(e => !e.isSingleDay).length;
+                      const singleDayEventsInDay = dayEvents.filter(e => e.isSingleDay);
+                      const singleDayIndex = singleDayEventsInDay.findIndex(e => e.id === event.id);
+                      eventIndex = multiDayCount + singleDayIndex;
+                    }
                     const eventStart = new Date(event.startTime);
                     const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
                     const primaryTag = event.permissionTags?.[0];
