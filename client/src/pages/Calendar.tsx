@@ -319,7 +319,7 @@ export default function Calendar() {
                           style={{
                             left: `${(multiEvent.startCol / 7) * 100}%`,
                             width: `${(multiEvent.span / 7) * 100}%`,
-                            top: `${30 + multiIndex * 26}px`,
+                            top: `${40 + multiIndex * 26}px`,
                             height: '22px'
                           }}
                           title={`${multiEvent.event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')} to ${format(new Date(multiEvent.event.endTime), 'MMM d h:mm a')}`}
@@ -353,13 +353,12 @@ export default function Calendar() {
                             ${isSelected ? 'bg-primary/5 ring-2 ring-primary ring-inset' : 'hover:bg-gray-50'}
                             ${isToday_ && !isSelected ? 'bg-blue-50' : ''}
                           `}
-                          style={{ paddingTop: `${multiDayEvents.length * 26 + 8}px` }}
                         >
                           <div className={`text-sm font-medium mb-2 ${isToday_ ? 'text-blue-600' : ''}`}>
                             {format(day, "d")}
                           </div>
                           
-                          <div className="flex-1 overflow-hidden space-y-1">
+                          <div className="flex-1 overflow-hidden space-y-1" style={{ marginTop: `${multiDayEvents.length * 26}px` }}>
                             {dayEvents.slice(0, 3).map((event, eventIndex) => {
                               const eventStart = new Date(event.startTime);
                               const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
