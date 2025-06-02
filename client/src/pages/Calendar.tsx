@@ -123,102 +123,54 @@ export default function Calendar() {
     return eachDayOfInterval({ start: startDate, end: endDate });
   };
 
+  // Get all events for a specific day (both single and multi-day events that occur on this day)
   const getEventsForDay = (day: Date) => {
+    const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    
     const dayEvents = allEvents.filter(event => {
       const eventStart = new Date(event.startTime);
       const eventEnd = new Date(event.endTime);
-      const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate());
       const eventStartDate = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
       const eventEndDate = new Date(eventEnd.getFullYear(), eventEnd.getMonth(), eventEnd.getDate());
       
-      // Check if this day falls within the event's timespan
+      // Include event if this day falls within the event's date range
       return dayStart >= eventStartDate && dayStart <= eventEndDate;
     });
 
-    // Sort events by start time
     return dayEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
   };
 
-  // Get single-day events for individual day cells
-  const getSingleDayEventsForDay = (day: Date) => {
-    const dayEvents = allEvents.filter(event => {
-      const eventStart = new Date(event.startTime);
-      const eventEnd = new Date(event.endTime);
-      const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate());
-      const eventStartDate = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
-      const eventEndDate = new Date(eventEnd.getFullYear(), eventEnd.getMonth(), eventEnd.getDate());
+  // Calculate how many days an event spans and if this is the start day
+  const getEventDisplayInfo = (event: EventWithDetails, currentDay: Date) => {
+    const eventStart = new Date(event.startTime);
+    const eventEnd = new Date(event.endTime);
+    const eventStartDate = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
+    const eventEndDate = new Date(eventEnd.getFullYear(), eventEnd.getMonth(), eventEnd.getDate());
+    const currentDayDate = new Date(currentDay.getFullYear(), currentDay.getMonth(), currentDay.getDate());
+    
+    const isStartDay = currentDayDate.getTime() === eventStartDate.getTime();
+    const isEndDay = currentDayDate.getTime() === eventEndDate.getTime();
+    const isSingleDay = eventStartDate.getTime() === eventEndDate.getTime();
+    
+    // Calculate how many days from current day to end of event (within the current week)
+    let daysToEnd = 0;
+    if (!isSingleDay) {
+      const currentDayOfWeek = currentDay.getDay(); // 0 = Sunday, 6 = Saturday
+      const daysUntilWeekEnd = 6 - currentDayOfWeek;
       
-      // Only include single-day events
-      const isSingleDay = eventStartDate.getTime() === eventEndDate.getTime();
+      const timeDiff = eventEndDate.getTime() - currentDayDate.getTime();
+      const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
       
-      return isSingleDay && dayStart.getTime() === eventStartDate.getTime();
-    });
-
-    return dayEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-  };
-
-  // Get multi-day events that need to span across the calendar
-  const getMultiDayEventsForWeek = (weekStartIndex: number) => {
-    const weekDays = days.slice(weekStartIndex, weekStartIndex + 7);
-    const multiDayEvents: Array<{
-      event: EventWithDetails;
-      startCol: number;
-      span: number;
-      isStart: boolean;
-      isEnd: boolean;
-    }> = [];
-
-    allEvents.forEach(event => {
-      const eventStart = new Date(event.startTime);
-      const eventEnd = new Date(event.endTime);
-      const eventStartDate = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
-      const eventEndDate = new Date(eventEnd.getFullYear(), eventEnd.getMonth(), eventEnd.getDate());
-      
-      // Only process multi-day events
-      if (eventStartDate.getTime() === eventEndDate.getTime()) return;
-      
-      // Check if event overlaps with this week
-      const weekStartDate = weekDays[0];
-      const weekEndDate = weekDays[weekDays.length - 1];
-      
-      if (eventStartDate > weekEndDate || eventEndDate < weekStartDate) return;
-      
-      // Calculate start column and span
-      let startCol = 0;
-      let endCol = 6;
-      
-      // Find start column
-      for (let i = 0; i < weekDays.length; i++) {
-        const dayDate = new Date(weekDays[i].getFullYear(), weekDays[i].getMonth(), weekDays[i].getDate());
-        if (dayDate >= eventStartDate) {
-          startCol = i;
-          break;
-        }
-      }
-      
-      // Find end column
-      for (let i = weekDays.length - 1; i >= 0; i--) {
-        const dayDate = new Date(weekDays[i].getFullYear(), weekDays[i].getMonth(), weekDays[i].getDate());
-        if (dayDate <= eventEndDate) {
-          endCol = i;
-          break;
-        }
-      }
-      
-      const span = endCol - startCol + 1;
-      
-      if (span > 0) {
-        multiDayEvents.push({
-          event,
-          startCol,
-          span,
-          isStart: eventStartDate >= weekStartDate,
-          isEnd: eventEndDate <= weekEndDate
-        });
-      }
-    });
-
-    return multiDayEvents.sort((a, b) => new Date(a.event.startTime).getTime() - new Date(b.event.startTime).getTime());
+      daysToEnd = Math.min(daysDiff, daysUntilWeekEnd);
+    }
+    
+    return {
+      isStartDay,
+      isEndDay,
+      isSingleDay,
+      daysToEnd,
+      shouldDisplay: isStartDay || isSingleDay // Only display on start day for multi-day events
+    };
   };
 
   const days = getDaysInMonth();
@@ -282,128 +234,90 @@ export default function Calendar() {
               ))}
             </div>
             
-            {/* Calendar Weeks */}
-            {Array.from({ length: Math.ceil(days.length / 7) }, (_, weekIndex) => {
-              const weekStartIndex = weekIndex * 7;
-              const weekDays = days.slice(weekStartIndex, weekStartIndex + 7);
-              const multiDayEvents = getMultiDayEventsForWeek(weekStartIndex);
-              
-              return (
-                <div key={weekIndex} className="relative">
-                  {/* Week days grid with multi-day events overlay */}
-                  <div className="grid grid-cols-7 relative">
-                    {/* Multi-day event bars positioned within the grid */}
-                    {multiDayEvents.map((multiEvent, multiIndex) => {
-                      const primaryTag = multiEvent.event.permissionTags?.[0];
-                      const tagInfo = primaryTag ? PREDEFINED_TAGS.find(t => t.name === primaryTag.tag) : null;
-                      const eventStart = new Date(multiEvent.event.startTime);
-                      const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
-                      
-                      return (
-                        <div
-                          key={multiIndex}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingEvent(multiEvent.event);
-                          }}
-                          className={`
-                            absolute text-xs px-2 py-1 text-white font-medium cursor-pointer leading-tight z-10
-                            ${tagInfo?.color?.includes('red') ? 'bg-red-500' :
-                              tagInfo?.color?.includes('blue') ? 'bg-blue-500' :
-                              tagInfo?.color?.includes('green') ? 'bg-green-500' :
-                              tagInfo?.color?.includes('purple') ? 'bg-purple-500' :
-                              tagInfo?.color?.includes('orange') ? 'bg-orange-500' :
-                              'bg-gray-500'}
-                            hover:opacity-80 transition-opacity rounded
-                          `}
-                          style={{
-                            left: `${(multiEvent.startCol / 7) * 100}%`,
-                            width: `${(multiEvent.span / 7) * 100}%`,
-                            top: `${40 + multiIndex * 26}px`,
-                            height: '22px'
-                          }}
-                          title={`${multiEvent.event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')} to ${format(new Date(multiEvent.event.endTime), 'MMM d h:mm a')}`}
-                        >
-                          <div className="truncate">
-                            {multiEvent.event.title}
-                          </div>
-                        </div>
-                      );
-                    })}
+            {/* Calendar Days */}
+            <div className="grid grid-cols-7">
+              {days.map((day, index) => {
+                const isCurrentMonth = isSameMonth(day, currentDate);
+                const isSelected = isSameDay(day, selectedDate);
+                const isToday_ = isToday(day);
+                const dayEvents = getEventsForDay(day);
+                const isWeekEnd = index % 7 === 6; // Last day of week
+                const isLastRow = index >= days.length - 7; // Last row
+                
+                return (
+                  <div
+                    key={index}
+                    onClick={() => setSelectedDate(day)}
+                    className={`
+                      flex flex-col p-2 transition-colors relative cursor-pointer
+                      min-h-[110px] sm:min-h-[130px] h-[110px] sm:h-[130px]
+                      ${!isWeekEnd ? 'border-r border-gray-200' : ''}
+                      ${!isLastRow ? 'border-b border-gray-200' : ''}
+                      ${isCurrentMonth ? 'text-gray-900 bg-white' : 'text-gray-400 bg-gray-50'}
+                      ${isSelected ? 'bg-primary/5 ring-2 ring-primary ring-inset' : 'hover:bg-gray-50'}
+                      ${isToday_ && !isSelected ? 'bg-blue-50' : ''}
+                    `}
+                  >
+                    <div className={`text-sm font-medium mb-2 ${isToday_ ? 'text-blue-600' : ''}`}>
+                      {format(day, "d")}
+                    </div>
                     
-                    {weekDays.map((day, dayIndex) => {
-                      const globalIndex = weekStartIndex + dayIndex;
-                      const isCurrentMonth = isSameMonth(day, currentDate);
-                      const isSelected = isSameDay(day, selectedDate);
-                      const isToday_ = isToday(day);
-                      const dayEvents = getSingleDayEventsForDay(day);
-                      const isWeekEnd = dayIndex === 6; // Last day of week
-                      const isLastRow = weekIndex === Math.ceil(days.length / 7) - 1; // Last row
+                    <div className="flex-1 overflow-hidden space-y-1">
+                      {dayEvents.slice(0, 3).map((event, eventIndex) => {
+                        const eventStart = new Date(event.startTime);
+                        const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
+                        const primaryTag = event.permissionTags?.[0];
+                        const tagInfo = primaryTag ? PREDEFINED_TAGS.find(t => t.name === primaryTag.tag) : null;
+                        const displayInfo = getEventDisplayInfo(event, day);
+                        
+                        // Only render if this is the start day for multi-day events, or if it's a single-day event
+                        if (!displayInfo.shouldDisplay) return null;
+                        
+                        return (
+                          <div
+                            key={eventIndex}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingEvent(event);
+                            }}
+                            className={`
+                              text-xs px-2 py-1 text-white font-medium cursor-pointer leading-tight relative
+                              ${displayInfo.isSingleDay ? 'rounded' : 'rounded-l'}
+                              ${tagInfo?.color?.includes('red') ? 'bg-red-500' :
+                                tagInfo?.color?.includes('blue') ? 'bg-blue-500' :
+                                tagInfo?.color?.includes('green') ? 'bg-green-500' :
+                                tagInfo?.color?.includes('purple') ? 'bg-purple-500' :
+                                tagInfo?.color?.includes('orange') ? 'bg-orange-500' :
+                                'bg-gray-500'}
+                              hover:opacity-80 transition-opacity
+                            `}
+                            style={{
+                              // For multi-day events, extend the width to cover additional days
+                              width: displayInfo.isSingleDay ? '100%' : `${100 + (displayInfo.daysToEnd * 100)}%`,
+                              zIndex: displayInfo.isSingleDay ? 1 : 10
+                            }}
+                            title={`${event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')}${!displayInfo.isSingleDay ? ` to ${format(new Date(event.endTime), 'MMM d h:mm a')}` : ''}`}
+                          >
+                            <div className="line-clamp-2 break-words">
+                              {event.title}
+                              {!displayInfo.isSingleDay && (
+                                <span className="text-xs opacity-75 ml-1">→</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                       
-                      return (
-                        <div
-                          key={globalIndex}
-                          onClick={() => setSelectedDate(day)}
-                          className={`
-                            flex flex-col p-2 transition-colors relative cursor-pointer
-                            min-h-[110px] sm:min-h-[130px] h-[110px] sm:h-[130px]
-                            ${!isWeekEnd ? 'border-r border-gray-200' : ''}
-                            ${!isLastRow ? 'border-b border-gray-200' : ''}
-                            ${isCurrentMonth ? 'text-gray-900 bg-white' : 'text-gray-400 bg-gray-50'}
-                            ${isSelected ? 'bg-primary/5 ring-2 ring-primary ring-inset' : 'hover:bg-gray-50'}
-                            ${isToday_ && !isSelected ? 'bg-blue-50' : ''}
-                          `}
-                        >
-                          <div className={`text-sm font-medium mb-2 ${isToday_ ? 'text-blue-600' : ''}`}>
-                            {format(day, "d")}
-                          </div>
-                          
-                          <div className="flex-1 overflow-hidden space-y-1" style={{ marginTop: `${multiDayEvents.length * 26}px` }}>
-                            {dayEvents.slice(0, 3).map((event, eventIndex) => {
-                              const eventStart = new Date(event.startTime);
-                              const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0;
-                              const primaryTag = event.permissionTags?.[0];
-                              const tagInfo = primaryTag ? PREDEFINED_TAGS.find(t => t.name === primaryTag.tag) : null;
-                              
-                              return (
-                                <div
-                                  key={eventIndex}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingEvent(event);
-                                  }}
-                                  className={`
-                                    text-xs px-2 py-1 text-white font-medium cursor-pointer leading-tight rounded
-                                    ${tagInfo?.color?.includes('red') ? 'bg-red-500' :
-                                      tagInfo?.color?.includes('blue') ? 'bg-blue-500' :
-                                      tagInfo?.color?.includes('green') ? 'bg-green-500' :
-                                      tagInfo?.color?.includes('purple') ? 'bg-purple-500' :
-                                      tagInfo?.color?.includes('orange') ? 'bg-orange-500' :
-                                      'bg-gray-500'}
-                                    hover:opacity-80 transition-opacity
-                                  `}
-                                  title={`${event.title} - ${format(eventStart, isAllDay ? 'MMM d' : 'h:mm a')}`}
-                                >
-                                  <div className="line-clamp-2 break-words">
-                                    {event.title}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                            
-                            {dayEvents.length > 3 && (
-                              <div className="text-xs text-gray-500 font-medium px-1">
-                                +{dayEvents.length - 3} more
-                              </div>
-                            )}
-                          </div>
+                      {dayEvents.length > 3 && (
+                        <div className="text-xs text-gray-500 font-medium px-1">
+                          +{dayEvents.length - 3} more
                         </div>
-                      );
-                    })}
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
         
