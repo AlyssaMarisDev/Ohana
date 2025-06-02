@@ -238,7 +238,7 @@ export default function Calendar() {
             </div>
             
             {/* Calendar Days Grid */}
-            <div className="grid grid-cols-7 relative" style={{ gridTemplateRows: `repeat(${Math.ceil(days.length / 7)}, minmax(110px, 130px))` }}>
+            <div className="grid grid-cols-7 relative calendar-grid">
               {/* Day cells without events */}
               {days.map((day, index) => {
                 const isCurrentMonth = isSameMonth(day, currentDate);
@@ -256,7 +256,7 @@ export default function Calendar() {
                     key={index}
                     onClick={() => setSelectedDate(day)}
                     className={`
-                      flex flex-col p-2 transition-colors cursor-pointer
+                      flex flex-col p-2 transition-colors cursor-pointer calendar-day-cell
                       min-h-[110px] sm:min-h-[130px] h-[110px] sm:h-[130px]
                       ${!isWeekEnd ? 'border-r border-gray-200' : ''}
                       ${!isLastRow ? 'border-b border-gray-200' : ''}
@@ -264,6 +264,8 @@ export default function Calendar() {
                       ${isSelected ? 'bg-primary/5 ring-2 ring-primary ring-inset' : 'hover:bg-gray-50'}
                       ${isToday_ && !isSelected ? 'bg-blue-50' : ''}
                     `}
+                    data-row={Math.floor(index / 7)}
+                    data-col={index % 7}
                   >
                     <div className={`text-sm font-medium mb-2 ${isToday_ ? 'text-blue-600' : ''}`}>
                       {format(day, "d")}
@@ -397,14 +399,14 @@ export default function Calendar() {
                           }
                         `}
                         style={{
-                          gridColumn: event.isSingleDay 
-                            ? `${startCol + 1} / ${startCol + 2}`  // Single column for single-day events
-                            : `${startCol + 1} / ${startCol + event.spanCols + 1}`,  // Span multiple columns for multi-day events
-                          gridRow: `${startRow + 1}`,
-                          alignSelf: 'start',
-                          marginTop: `${40 + (eventIndex * 25)}px`,
-                          marginLeft: event.isSingleDay ? '2px' : '0px',  // Small left margin for single-day events
-                          marginRight: event.isSingleDay ? '2px' : '0px', // Small right margin for single-day events
+                          position: 'absolute',
+                          left: event.isSingleDay 
+                            ? `${(startCol / 7) * 100 + 0.25}%`  // Small left margin for single-day events
+                            : `${(startCol / 7) * 100}%`,        // Edge-to-edge for multi-day events
+                          width: event.isSingleDay 
+                            ? `${(event.spanCols / 7) * 100 - 0.5}%`  // Reduce width to account for margin
+                            : `${(event.spanCols / 7) * 100}%`,       // Full width for multi-day events
+                          top: `calc(${startRow * 100 / Math.ceil(days.length / 7)}% + 40px + ${eventIndex * 25}px)`,
                           height: '22px',
                           backgroundColor: event.isSingleDay ? 'transparent' : eventColor,
                           borderLeft: event.isSingleDay ? `4px solid ${eventColor}` : 'none'
