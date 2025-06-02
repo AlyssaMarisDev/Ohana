@@ -331,8 +331,8 @@ export default function Calendar() {
                         hover:opacity-80 transition-opacity
                       `}
                       style={{
-                        left: `${(startCol / 7) * 100 + 0.5}%`, // Small margin from edges
-                        width: `${(1 / 7) * 100 - 1}%`, // Full day width minus small margins
+                        left: `${(startCol / 7) * 100}%`, // No margin - edge to edge
+                        width: `${(1 / 7) * 100}%`, // Full day width - edge to edge
                         top: `${startRow * 130 + 70 + (eventIndexInDay * 25)}px`, // 130px per row + 70px offset + stacking
                         height: '22px'
                       }}
