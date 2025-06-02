@@ -401,11 +401,11 @@ export default function Calendar() {
                           setEditingEvent(event);
                         }}
                         className={`
-                          absolute text-xs px-2 py-1 font-medium cursor-pointer leading-tight rounded z-10
+                          absolute text-xs py-1 font-medium cursor-pointer leading-tight rounded z-10
                           hover:opacity-80 transition-opacity
                           ${event.isSingleDay 
-                            ? 'text-gray-900 bg-transparent' 
-                            : 'text-white'
+                            ? 'text-gray-900 bg-transparent px-1' 
+                            : 'text-white px-2'
                           }
                         `}
                         style={{
