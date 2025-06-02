@@ -359,16 +359,27 @@ export default function Calendar() {
                 
                 // Create a global event index mapping to handle overlapping multi-day events
                 const globalEventPositions = new Map();
-                let globalEventIndex = 0;
                 
-                // First pass: assign positions to all events across all days
-                eventsByDay.forEach((dayEvents, dateKey) => {
+                // Collect all unique events and sort them by start time
+                const allUniqueEvents = [];
+                eventsByDay.forEach((dayEvents) => {
                   dayEvents.forEach((event) => {
                     if (!globalEventPositions.has(event.id)) {
-                      globalEventPositions.set(event.id, globalEventIndex);
-                      globalEventIndex++;
+                      allUniqueEvents.push(event);
+                      globalEventPositions.set(event.id, true); // Mark as seen
                     }
                   });
+                });
+                
+                // Sort all events by start time (earlier events get lower indices = higher visual position)
+                allUniqueEvents.sort((a, b) => {
+                  return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+                });
+                
+                // Assign global positions based on chronological order
+                globalEventPositions.clear();
+                allUniqueEvents.forEach((event, index) => {
+                  globalEventPositions.set(event.id, index);
                 });
 
                 // Render all events with unified spacing and overflow handling
