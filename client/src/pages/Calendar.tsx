@@ -416,22 +416,32 @@ export default function Calendar() {
                   const isLargeScreen = window.innerWidth >= 640;
                   const maxEvents = isLargeScreen ? maxEventsLarge : maxEventsSmall;
                   
-                  // For overflow calculation, we need to consider all events that will be visible in this day
-                  // Multi-day events are always shown, so they take up slots
+                  // Calculate proper event overflow respecting the max event limit
                   const multiDayEventsInThisDay = dayEvents.filter(event => !event.isSingleDay);
                   const singleDayEventsInThisDay = dayEvents.filter(event => event.isSingleDay);
                   
-                  // Calculate how many events we can actually show
+                  // Multi-day events always take priority and occupy slots
                   const multiDayCount = multiDayEventsInThisDay.length;
+                  
+                  // Calculate available slots for single-day events
                   const availableSlotsForSingleDay = Math.max(0, maxEvents - multiDayCount);
                   const singleDayEventsToShow = Math.min(singleDayEventsInThisDay.length, availableSlotsForSingleDay);
                   
-                  // Total events to show and remaining count
-                  const eventsToShow = multiDayCount + singleDayEventsToShow;
+                  // If we have no room for single-day events but there are some, account for overflow properly
+                  const actualEventsToShow = Math.min(maxEvents, multiDayCount + singleDayEventsToShow);
                   const totalEvents = dayEvents.length;
-                  const remainingEvents = totalEvents - eventsToShow;
+                  const remainingEvents = totalEvents - actualEventsToShow;
                   
-                  dayEvents.slice(0, eventsToShow).forEach((event, localIndex) => {
+                  // Slice the events array to only show what fits
+                  const eventsToRender = [];
+                  
+                  // Add all multi-day events first
+                  eventsToRender.push(...multiDayEventsInThisDay);
+                  
+                  // Add single-day events up to available slots
+                  eventsToRender.push(...singleDayEventsInThisDay.slice(0, singleDayEventsToShow));
+                  
+                  eventsToRender.forEach((event, localIndex) => {
                     // Use global position for multi-day events to maintain consistency across days
                     // For single-day events, position them after all multi-day events in the day
                     let eventIndex;
@@ -510,7 +520,7 @@ export default function Calendar() {
                           position: 'absolute',
                           left: `${(startCol / 7) * 100 + 0.25}%`,
                           width: `${(1 / 7) * 100 - 0.5}%`,
-                          top: `calc(${startRow * (100 / Math.ceil(days.length / 7))}% + 30px + ${eventsToShow * 25}px)`,
+                          top: `calc(${startRow * (100 / Math.ceil(days.length / 7))}% + 30px + ${actualEventsToShow * 25}px)`,
                           height: '18px',
                           display: 'flex',
                           alignItems: 'center',
