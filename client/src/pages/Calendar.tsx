@@ -406,7 +406,7 @@ export default function Calendar() {
                           width: event.isSingleDay 
                             ? `${(event.spanCols / 7) * 100 - 0.5}%`  // Reduce width to account for margin
                             : `${(event.spanCols / 7) * 100}%`,       // Full width for multi-day events
-                          top: `calc(${startRow * (100 / Math.ceil(days.length / 7))}% + 40px + ${eventIndex * 25}px)`,
+                          top: `calc(${startRow * (100 / Math.ceil(days.length / 7))}% + 25px + ${eventIndex * 25}px)`,
                           height: '22px',
                           backgroundColor: event.isSingleDay ? 'transparent' : eventColor,
                           borderLeft: event.isSingleDay ? `4px solid ${eventColor}` : 'none'
