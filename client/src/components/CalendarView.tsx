@@ -151,12 +151,16 @@ export default function CalendarView({
   };
 
   const handleSelectSlot = (slotInfo: { start: Date; end: Date; slots: Date[]; action: string }) => {
+    console.log('React Big Calendar onSelectSlot triggered:', slotInfo);
+    
     // Get all events for the clicked day
     const clickedDate = slotInfo.start;
     const dayEvents = events.filter(event => {
       const eventDate = new Date(event.startTime);
       return eventDate.toDateString() === clickedDate.toDateString();
     });
+    
+    console.log('Events found for date:', clickedDate, dayEvents);
     
     // Show modal with day's events
     if (onSelectSlot) {
