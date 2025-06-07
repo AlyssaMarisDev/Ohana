@@ -143,8 +143,6 @@ export default function CalendarView({
   };
 
   const handleSelectSlot = (slotInfo: { start: Date; end: Date; slots: Date[]; action: string }) => {
-    console.log('Mobile click detected:', slotInfo.action, slotInfo);
-    
     // Handle all click and select actions
     if (slotInfo.action === 'click' || slotInfo.action === 'select' || slotInfo.action === 'doubleClick') {
       // Get all events for the clicked day
@@ -153,8 +151,6 @@ export default function CalendarView({
         const eventDate = new Date(event.startTime);
         return eventDate.toDateString() === clickedDate.toDateString();
       });
-      
-      console.log('Opening modal for date:', clickedDate, 'with events:', dayEvents.length);
       
       // Show modal with day's events
       if (onSelectSlot) {
@@ -179,8 +175,6 @@ export default function CalendarView({
     const monthRow = target.closest('.rbc-month-row');
     
     if (dateCell || monthRow) {
-      console.log('Custom touch handler triggered on:', target.className);
-      
       let dayNumber: number | null = null;
       let clickedElement = dateCell || monthRow;
       
@@ -220,8 +214,6 @@ export default function CalendarView({
           const eventDate = new Date(event.startTime);
           return eventDate.toDateString() === clickedDate.toDateString();
         });
-        
-        console.log('Custom handler - Opening modal for day:', dayNumber, 'Date:', clickedDate, 'Events:', dayEvents.length);
         
         if (onSelectSlot) {
           onSelectSlot({
@@ -272,27 +264,10 @@ export default function CalendarView({
           -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
           user-select: none;
           -webkit-user-select: none;
-          position: relative;
-          min-height: 80px;
         }
         
         .rbc-date-cell:active {
           background-color: #f3f4f6;
-        }
-        
-        .rbc-month-row {
-          cursor: pointer;
-          touch-action: manipulation;
-        }
-        
-        .rbc-row-content {
-          cursor: pointer;
-          min-height: 80px;
-          position: relative;
-        }
-        
-        .rbc-row-content:active {
-          background-color: rgba(243, 244, 246, 0.5);
         }
         
         .rbc-date-cell.rbc-off-range {
