@@ -40,8 +40,7 @@ export default function DayEventsModal({ open, onOpenChange, date, events }: Day
             sortedEvents.map((event) => (
               <EventCard 
                 key={event.id} 
-                event={event} 
-                compact={false}
+                event={event}
               />
             ))
           )}
