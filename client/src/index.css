@@ -13,22 +13,7 @@
   box-sizing: border-box;
 }
 
-/* FullCalendar navigation button customization */
-.fc-button .fc-icon {
-  display: none !important;
-}
-
-.fc-prev-button::after {
-  content: '‹';
-  font-size: 18px;
-  font-weight: normal;
-}
-
-.fc-next-button::after {
-  content: '›';
-  font-size: 18px;
-  font-weight: normal;
-}
+/* FullCalendar navigation uses default arrows */
 
 :root {
   --background: 210 11% 98%; /* #F8FAFC */
