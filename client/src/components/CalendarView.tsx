@@ -135,6 +135,14 @@ export default function CalendarView({
     ),
   };
 
+  // Make day backgrounds clickable
+  const dayPropGetter = (date: Date) => ({
+    style: {
+      cursor: 'pointer',
+      minHeight: '80px',
+    },
+  });
+
   const handleSelectEvent = (event: CalendarEvent, e: React.SyntheticEvent) => {
     // Prevent event selection - we want day click instead
     e.preventDefault();
@@ -143,120 +151,27 @@ export default function CalendarView({
   };
 
   const handleSelectSlot = (slotInfo: { start: Date; end: Date; slots: Date[]; action: string }) => {
-    // Handle all click and select actions
-    if (slotInfo.action === 'click' || slotInfo.action === 'select' || slotInfo.action === 'doubleClick') {
-      // Get all events for the clicked day
-      const clickedDate = slotInfo.start;
-      const dayEvents = events.filter(event => {
-        const eventDate = new Date(event.startTime);
-        return eventDate.toDateString() === clickedDate.toDateString();
-      });
-      
-      // Show modal with day's events
-      if (onSelectSlot) {
-        onSelectSlot({
-          start: slotInfo.start,
-          end: slotInfo.end,
-          events: dayEvents
-        } as any);
-      }
+    // Get all events for the clicked day
+    const clickedDate = slotInfo.start;
+    const dayEvents = events.filter(event => {
+      const eventDate = new Date(event.startTime);
+      return eventDate.toDateString() === clickedDate.toDateString();
+    });
+    
+    // Show modal with day's events
+    if (onSelectSlot) {
+      onSelectSlot({
+        start: slotInfo.start,
+        end: slotInfo.end,
+        events: dayEvents
+      } as any);
     }
   };
 
-  // Add custom touch handler for mobile devices
-  const handleCalendarClick = (e: React.MouseEvent | React.TouchEvent) => {
-    const target = e.target as HTMLElement;
-    
-    // First, look for the specific date cell that was clicked
-    const dateCell = target.closest('.rbc-date-cell');
-    
-    if (dateCell) {
-      // Look for the day number specifically within this date cell only
-      let dayNumber: number | null = null;
-      
-      // Method 1: Look for button with day number within this specific cell
-      const dayButton = dateCell.querySelector('button');
-      if (dayButton && dayButton.textContent) {
-        dayNumber = parseInt(dayButton.textContent);
-      }
-      
-      // Method 2: If no button, look for day number text within this cell
-      if (!dayNumber) {
-        const cellText = dateCell.textContent?.trim();
-        const dayMatch = cellText?.match(/^\d{1,2}/);
-        if (dayMatch) {
-          dayNumber = parseInt(dayMatch[0]);
-        }
-      }
-      
-      if (dayNumber) {
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
-        const clickedDate = new Date(currentYear, currentMonth, dayNumber);
-        
-        // Get events for this date
-        const dayEvents = events.filter(event => {
-          const eventDate = new Date(event.startTime);
-          return eventDate.toDateString() === clickedDate.toDateString();
-        });
-        
-        if (onSelectSlot) {
-          onSelectSlot({
-            start: clickedDate,
-            end: new Date(clickedDate.getTime() + 24 * 60 * 60 * 1000),
-            events: dayEvents
-          } as any);
-        }
-      }
-    } else {
-      // Fallback: if no date cell found, try to find it through the event target chain
-      const monthView = target.closest('.rbc-month-view');
-      if (monthView) {
-        // Try to find any date cell in the vicinity by checking parent elements
-        let currentElement = target;
-        let attempts = 0;
-        
-        while (currentElement && attempts < 10) {
-          const nearbyDateCell = currentElement.querySelector?.('.rbc-date-cell') || 
-                                 currentElement.parentElement?.querySelector?.('.rbc-date-cell');
-          
-          if (nearbyDateCell) {
-            const dayButton = nearbyDateCell.querySelector('button');
-            if (dayButton && dayButton.textContent) {
-              const dayNumber = parseInt(dayButton.textContent);
-              const currentMonth = new Date().getMonth();
-              const currentYear = new Date().getFullYear();
-              const clickedDate = new Date(currentYear, currentMonth, dayNumber);
-              
-              const dayEvents = events.filter(event => {
-                const eventDate = new Date(event.startTime);
-                return eventDate.toDateString() === clickedDate.toDateString();
-              });
-              
-              if (onSelectSlot) {
-                onSelectSlot({
-                  start: clickedDate,
-                  end: new Date(clickedDate.getTime() + 24 * 60 * 60 * 1000),
-                  events: dayEvents
-                } as any);
-              }
-              break;
-            }
-          }
-          
-          currentElement = currentElement.parentElement;
-          attempts++;
-        }
-      }
-    }
-  };
+
 
   return (
-    <div 
-      className={`calendar-container ${className}`}
-      onClick={handleCalendarClick}
-      onTouchEnd={handleCalendarClick}
-    >
+    <div className={`calendar-container ${className}`}>
       <style>{`
         .rbc-calendar {
           font-family: inherit;
@@ -485,6 +400,7 @@ export default function CalendarView({
         onSelectSlot={handleSelectSlot}
         selectable
         eventPropGetter={eventStyleGetter}
+        dayPropGetter={dayPropGetter}
         components={components}
         step={30}
         showMultiDayTimes
