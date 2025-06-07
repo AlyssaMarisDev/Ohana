@@ -8,6 +8,7 @@ import BottomNavigation from "@/components/BottomNavigation";
 import CreateEventModal from "@/components/CreateEventModal";
 import EditEventModal from "@/components/EditEventModal";
 import CalendarView from "@/components/CalendarView";
+import DayEventsModal from "@/components/DayEventsModal";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { EventWithDetails, HouseholdWithMembers } from "@shared/schema";
@@ -23,6 +24,9 @@ export default function Calendar() {
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EventWithDetails | null>(null);
   const [currentHouseholdId, setCurrentHouseholdId] = useState<number | null>(null);
+  const [showDayEvents, setShowDayEvents] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [dayEvents, setDayEvents] = useState<EventWithDetails[]>([]);
 
   // Fetch user's households
   const { data: households, isLoading: householdsLoading } = useQuery<HouseholdWithMembers[]>({

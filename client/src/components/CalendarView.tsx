@@ -20,7 +20,7 @@ interface CalendarEvent extends BigCalendarEvent {
 interface CalendarViewProps {
   events: EventWithDetails[];
   onSelectEvent?: (event: EventWithDetails) => void;
-  onSelectSlot?: (slotInfo: { start: Date; end: Date }) => void;
+  onSelectSlot?: (slotInfo: { start: Date; end: Date; events?: EventWithDetails[] }) => void;
   view?: string;
   onView?: (view: string) => void;
   date?: Date;
@@ -135,18 +135,31 @@ export default function CalendarView({
     ),
   };
 
-  const handleSelectEvent = (event: CalendarEvent) => {
-    if (onSelectEvent && event.resource) {
-      onSelectEvent(event.resource);
-    }
+  const handleSelectEvent = (event: CalendarEvent, e: React.SyntheticEvent) => {
+    // Prevent event selection - we want day click instead
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
   };
 
   const handleSelectSlot = (slotInfo: { start: Date; end: Date; slots: Date[]; action: string }) => {
-    if (onSelectSlot) {
-      onSelectSlot({
-        start: slotInfo.start,
-        end: slotInfo.end,
+    // Only handle day clicks, not time slot selections
+    if (slotInfo.action === 'click') {
+      // Get all events for the clicked day
+      const clickedDate = slotInfo.start;
+      const dayEvents = events.filter(event => {
+        const eventDate = new Date(event.startTime);
+        return eventDate.toDateString() === clickedDate.toDateString();
       });
+      
+      // Show modal with day's events
+      if (onSelectSlot) {
+        onSelectSlot({
+          start: slotInfo.start,
+          end: slotInfo.end,
+          events: dayEvents
+        } as any);
+      }
     }
   };
 
@@ -197,6 +210,8 @@ export default function CalendarView({
           height: 18px;
           line-height: 16px;
           font-size: 10px;
+          pointer-events: none;
+          cursor: default;
         }
         
         .rbc-event:first-of-type {
@@ -364,7 +379,7 @@ export default function CalendarView({
         views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
         date={date}
         onNavigate={onNavigate}
-        onView={onView as any}
+        onView={() => {}} // Disable view switching
         onSelectEvent={handleSelectEvent}
         onSelectSlot={handleSelectSlot}
         selectable
