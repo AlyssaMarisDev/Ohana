@@ -143,8 +143,6 @@ export default function CalendarView({
   };
 
   const handleSelectSlot = (slotInfo: { start: Date; end: Date; slots: Date[]; action: string }) => {
-    console.log('Calendar slot clicked:', slotInfo);
-    
     // Only handle day clicks, not time slot selections
     if (slotInfo.action === 'click' || slotInfo.action === 'select') {
       // Get all events for the clicked day
@@ -153,8 +151,6 @@ export default function CalendarView({
         const eventDate = new Date(event.startTime);
         return eventDate.toDateString() === clickedDate.toDateString();
       });
-      
-      console.log('Day events found:', dayEvents);
       
       // Show modal with day's events
       if (onSelectSlot) {
@@ -189,22 +185,6 @@ export default function CalendarView({
         
         .rbc-month-view {
           border: none;
-        }
-        
-        .rbc-month-row {
-          min-height: 90px;
-        }
-        
-        .rbc-row-content {
-          position: relative;
-        }
-        
-        .rbc-date-cell,
-        .rbc-month-view .rbc-date-cell {
-          position: relative;
-          min-height: 90px;
-          border-right: 1px solid #e5e7eb;
-          border-bottom: 1px solid #e5e7eb;
         }
         
         .rbc-date-cell {
