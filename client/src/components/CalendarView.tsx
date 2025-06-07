@@ -175,7 +175,7 @@ export default function CalendarView({
         }
         
         .rbc-date-cell {
-          padding: 3px 8px 3px 8px;
+          padding: 2px 8px 2px 8px;
           text-align: right;
           color: #374151;
         }
@@ -192,11 +192,11 @@ export default function CalendarView({
         .rbc-event {
           border-radius: 4px;
           padding: 2px 4px;
-          margin: 3px 0 1px 0;
+          margin: 2px 0 1px 0;
         }
         
         .rbc-event:first-of-type {
-          margin-top: 3px;
+          margin-top: 2px;
         }
         
         .rbc-selected {
