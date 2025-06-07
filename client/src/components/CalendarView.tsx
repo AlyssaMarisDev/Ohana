@@ -191,13 +191,16 @@ export default function CalendarView({
         }
         
         .rbc-event {
-          border-radius: 4px;
-          padding: 2px 4px;
-          margin: 2px 0 1px 0;
+          border-radius: 3px;
+          padding: 1px 3px;
+          margin: 1px 0;
+          height: 16px;
+          line-height: 14px;
+          font-size: 10px;
         }
         
         .rbc-event:first-of-type {
-          margin-top: 2px;
+          margin-top: 1px;
         }
         
         .rbc-selected {
@@ -370,7 +373,7 @@ export default function CalendarView({
         step={30}
         showMultiDayTimes
         popup
-        max={4}
+
         formats={{
           timeGutterFormat: 'h:mm A',
           eventTimeRangeFormat: ({ start, end }) => 
