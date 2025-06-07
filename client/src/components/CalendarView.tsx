@@ -194,8 +194,8 @@ export default function CalendarView({
           border-radius: 3px;
           padding: 1px 3px;
           margin: 1px 0;
-          height: 16px;
-          line-height: 14px;
+          height: 18px;
+          line-height: 16px;
           font-size: 10px;
         }
         
