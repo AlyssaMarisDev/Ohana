@@ -1,20 +1,21 @@
-import { useMemo, useEffect, useRef } from 'react';
-import { Calendar, momentLocalizer, Views, Event as BigCalendarEvent } from 'react-big-calendar';
-import moment from 'moment';
+import { useMemo } from 'react';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
 import type { EventWithDetails } from '@shared/schema';
 
-const localizer = momentLocalizer(moment);
-
-interface CalendarEvent extends BigCalendarEvent {
+interface CalendarEvent {
   id: number | string;
   title: string;
-  start: Date;
-  end: Date;
-  resource?: EventWithDetails;
-  permissionTags?: Array<{ tag: string }>;
-  isGoogleEvent?: boolean;
+  start: string;
+  end: string;
+  backgroundColor?: string;
+  borderColor?: string;
+  extendedProps?: {
+    resource: EventWithDetails;
+    isGoogleEvent: boolean;
+  };
 }
 
 interface CalendarViewProps {
@@ -86,56 +87,7 @@ export default function CalendarView({
     }));
   }, [events]);
 
-  // Add mobile touch support for day cells
-  useEffect(() => {
-    if (!calendarRef.current) return;
 
-    const handleTouchEnd = (e: TouchEvent) => {
-      const target = e.target as HTMLElement;
-      
-      // Find the day cell that was touched
-      const dayCell = target.closest('.rbc-day-bg');
-      if (!dayCell) return;
-      
-      // Get all day cells to find the date
-      const allDayCells = calendarRef.current?.querySelectorAll('.rbc-day-bg');
-      const dayIndex = Array.from(allDayCells || []).indexOf(dayCell);
-      
-      if (dayIndex === -1) return;
-      
-      // Calculate the date from the calendar view
-      const startOfMonth = new Date(date);
-      startOfMonth.setDate(1);
-      const startOfWeek = new Date(startOfMonth);
-      startOfWeek.setDate(startOfMonth.getDate() - startOfMonth.getDay());
-      
-      const clickedDate = new Date(startOfWeek);
-      clickedDate.setDate(startOfWeek.getDate() + dayIndex);
-      
-      // Find events for this date
-      const dayEvents = events.filter(event => {
-        const eventDate = new Date(event.startTime);
-        return eventDate.toDateString() === clickedDate.toDateString();
-      });
-      
-      console.log('Mobile touch on date:', clickedDate, dayEvents);
-      
-      if (onSelectSlot) {
-        onSelectSlot({
-          start: clickedDate,
-          end: new Date(clickedDate.getTime() + 24 * 60 * 60 * 1000),
-          events: dayEvents
-        } as any);
-      }
-    };
-
-    const calendarElement = calendarRef.current;
-    calendarElement.addEventListener('touchend', handleTouchEnd, { passive: false });
-    
-    return () => {
-      calendarElement.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [date, events, onSelectSlot]);
 
   // Custom event style getter
   const eventStyleGetter = (event: CalendarEvent) => {
@@ -204,16 +156,12 @@ export default function CalendarView({
   };
 
   const handleSelectSlot = (slotInfo: { start: Date; end: Date; slots: Date[]; action: string }) => {
-    console.log('React Big Calendar onSelectSlot triggered:', slotInfo);
-    
     // Get all events for the clicked day
     const clickedDate = slotInfo.start;
     const dayEvents = events.filter(event => {
       const eventDate = new Date(event.startTime);
       return eventDate.toDateString() === clickedDate.toDateString();
     });
-    
-    console.log('Events found for date:', clickedDate, dayEvents);
     
     // Show modal with day's events
     if (onSelectSlot) {
