@@ -166,12 +166,14 @@ export default function Calendar() {
         currentHousehold={currentHousehold || null}
       />
 
-      <EditEventModal
-        open={!!editingEvent}
-        onOpenChange={(open) => !open && setEditingEvent(null)}
-        event={editingEvent!}
-        currentHousehold={currentHousehold || null}
-      />
+      {editingEvent && (
+        <EditEventModal
+          open={!!editingEvent}
+          onOpenChange={(open) => !open && setEditingEvent(null)}
+          event={editingEvent}
+          currentHousehold={currentHousehold || null}
+        />
+      )}
 
       <BottomNavigation />
     </div>
