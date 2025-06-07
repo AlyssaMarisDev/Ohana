@@ -228,7 +228,7 @@ export default function CalendarView({
 
 
   return (
-    <div className={`calendar-container ${className}`}>
+    <div ref={calendarRef} className={`calendar-container ${className}`}>
       <style>{`
         .rbc-calendar {
           font-family: inherit;
