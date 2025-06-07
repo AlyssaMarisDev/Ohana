@@ -170,15 +170,47 @@ export default function CalendarView({
   // Add custom touch handler for mobile devices
   const handleCalendarClick = (e: React.MouseEvent | React.TouchEvent) => {
     const target = e.target as HTMLElement;
-    const dateCell = target.closest('.rbc-date-cell');
     
-    if (dateCell) {
-      console.log('Custom touch handler triggered');
+    // Look for the day cell container, either rbc-date-cell or the row content
+    const dateCell = target.closest('.rbc-date-cell') || 
+                     target.closest('.rbc-row-content')?.querySelector('.rbc-date-cell');
+    
+    // Also check if we clicked directly on a calendar row
+    const monthRow = target.closest('.rbc-month-row');
+    
+    if (dateCell || monthRow) {
+      console.log('Custom touch handler triggered on:', target.className);
       
-      // Find the date from the calendar structure
-      const dayButton = dateCell.querySelector('button');
-      if (dayButton && dayButton.textContent) {
-        const dayNumber = parseInt(dayButton.textContent);
+      let dayNumber: number | null = null;
+      let clickedElement = dateCell || monthRow;
+      
+      // Try multiple methods to find the day number
+      if (clickedElement) {
+        // Method 1: Look for button with day number
+        const dayButton = clickedElement.querySelector('button');
+        if (dayButton && dayButton.textContent) {
+          dayNumber = parseInt(dayButton.textContent);
+        }
+        
+        // Method 2: Look for any element with day number text
+        if (!dayNumber) {
+          const allElements = clickedElement.querySelectorAll('*');
+          for (let el of Array.from(allElements)) {
+            const text = el.textContent?.trim();
+            if (text && /^\d{1,2}$/.test(text)) {
+              dayNumber = parseInt(text);
+              break;
+            }
+          }
+        }
+        
+        // Method 3: Check the clicked target itself
+        if (!dayNumber && target.textContent && /^\d{1,2}$/.test(target.textContent.trim())) {
+          dayNumber = parseInt(target.textContent.trim());
+        }
+      }
+      
+      if (dayNumber) {
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
         const clickedDate = new Date(currentYear, currentMonth, dayNumber);
@@ -189,7 +221,7 @@ export default function CalendarView({
           return eventDate.toDateString() === clickedDate.toDateString();
         });
         
-        console.log('Custom handler - Opening modal for:', clickedDate, 'Events:', dayEvents.length);
+        console.log('Custom handler - Opening modal for day:', dayNumber, 'Date:', clickedDate, 'Events:', dayEvents.length);
         
         if (onSelectSlot) {
           onSelectSlot({
@@ -240,10 +272,27 @@ export default function CalendarView({
           -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
           user-select: none;
           -webkit-user-select: none;
+          position: relative;
+          min-height: 80px;
         }
         
         .rbc-date-cell:active {
           background-color: #f3f4f6;
+        }
+        
+        .rbc-month-row {
+          cursor: pointer;
+          touch-action: manipulation;
+        }
+        
+        .rbc-row-content {
+          cursor: pointer;
+          min-height: 80px;
+          position: relative;
+        }
+        
+        .rbc-row-content:active {
+          background-color: rgba(243, 244, 246, 0.5);
         }
         
         .rbc-date-cell.rbc-off-range {
