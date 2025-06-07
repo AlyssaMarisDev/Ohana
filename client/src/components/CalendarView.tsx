@@ -150,9 +150,9 @@ export default function CalendarView({
         dateClick={handleDateClick}
         eventClick={handleEventClick}
         headerToolbar={{
-          left: 'prev,next',
+          left: 'prev',
           center: 'title',
-          right: ''
+          right: 'next'
         }}
         height="auto"
         dayMaxEvents={4}
