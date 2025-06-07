@@ -123,7 +123,7 @@ export default function CalendarView({
     }
   };
 
-  const handleSelectSlot = (slotInfo: any) => {
+  const handleSelectSlot = (slotInfo: { start: Date; end: Date; slots: Date[]; action: string }) => {
     if (onSelectSlot) {
       onSelectSlot({
         start: slotInfo.start,
