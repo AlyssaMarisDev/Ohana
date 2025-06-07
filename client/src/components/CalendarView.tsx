@@ -370,6 +370,7 @@ export default function CalendarView({
         step={30}
         showMultiDayTimes
         popup
+        max={4}
         formats={{
           timeGutterFormat: 'h:mm A',
           eventTimeRangeFormat: ({ start, end }) => 
