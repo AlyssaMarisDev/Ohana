@@ -13,6 +13,23 @@
   box-sizing: border-box;
 }
 
+/* FullCalendar navigation button customization */
+.fc-button .fc-icon {
+  display: none !important;
+}
+
+.fc-prev-button::after {
+  content: '‹';
+  font-size: 18px;
+  font-weight: normal;
+}
+
+.fc-next-button::after {
+  content: '›';
+  font-size: 18px;
+  font-weight: normal;
+}
+
 :root {
   --background: 210 11% 98%; /* #F8FAFC */
   --foreground: 210 24% 16%; /* #1E293B */

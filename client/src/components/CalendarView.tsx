@@ -154,10 +154,7 @@ export default function CalendarView({
           center: 'title',
           right: 'next'
         }}
-        buttonText={{
-          prev: '‹',
-          next: '›'
-        }}
+
         height="auto"
         dayMaxEvents={4}
         moreLinkClick="popover"
