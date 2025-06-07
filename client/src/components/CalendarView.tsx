@@ -143,14 +143,18 @@ export default function CalendarView({
   };
 
   const handleSelectSlot = (slotInfo: { start: Date; end: Date; slots: Date[]; action: string }) => {
-    // Only handle day clicks, not time slot selections
-    if (slotInfo.action === 'click' || slotInfo.action === 'select') {
+    console.log('Mobile click detected:', slotInfo.action, slotInfo);
+    
+    // Handle all click and select actions
+    if (slotInfo.action === 'click' || slotInfo.action === 'select' || slotInfo.action === 'doubleClick') {
       // Get all events for the clicked day
       const clickedDate = slotInfo.start;
       const dayEvents = events.filter(event => {
         const eventDate = new Date(event.startTime);
         return eventDate.toDateString() === clickedDate.toDateString();
       });
+      
+      console.log('Opening modal for date:', clickedDate, 'with events:', dayEvents.length);
       
       // Show modal with day's events
       if (onSelectSlot) {
@@ -163,8 +167,47 @@ export default function CalendarView({
     }
   };
 
+  // Add custom touch handler for mobile devices
+  const handleCalendarClick = (e: React.MouseEvent | React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    const dateCell = target.closest('.rbc-date-cell');
+    
+    if (dateCell) {
+      console.log('Custom touch handler triggered');
+      
+      // Find the date from the calendar structure
+      const dayButton = dateCell.querySelector('button');
+      if (dayButton && dayButton.textContent) {
+        const dayNumber = parseInt(dayButton.textContent);
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        const clickedDate = new Date(currentYear, currentMonth, dayNumber);
+        
+        // Get events for this date
+        const dayEvents = events.filter(event => {
+          const eventDate = new Date(event.startTime);
+          return eventDate.toDateString() === clickedDate.toDateString();
+        });
+        
+        console.log('Custom handler - Opening modal for:', clickedDate, 'Events:', dayEvents.length);
+        
+        if (onSelectSlot) {
+          onSelectSlot({
+            start: clickedDate,
+            end: new Date(clickedDate.getTime() + 24 * 60 * 60 * 1000),
+            events: dayEvents
+          } as any);
+        }
+      }
+    }
+  };
+
   return (
-    <div className={`calendar-container ${className}`}>
+    <div 
+      className={`calendar-container ${className}`}
+      onClick={handleCalendarClick}
+      onTouchEnd={handleCalendarClick}
+    >
       <style>{`
         .rbc-calendar {
           font-family: inherit;
