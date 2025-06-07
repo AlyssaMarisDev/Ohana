@@ -138,9 +138,9 @@ export default function CalendarView({
         .rbc-calendar {
           font-family: inherit;
           background: white;
-          border-radius: 8px;
+          border-radius: 0;
           overflow: hidden;
-          box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+          box-shadow: none;
         }
         
         .rbc-header {
@@ -153,7 +153,7 @@ export default function CalendarView({
         }
         
         .rbc-month-view {
-          border: 1px solid #e5e7eb;
+          border: none;
         }
         
         .rbc-date-cell {

@@ -81,7 +81,7 @@ export default function Calendar() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-white pb-20">
       <div className="safe-area-top bg-primary"></div>
       
       <AppHeader 
@@ -89,9 +89,9 @@ export default function Calendar() {
         onHouseholdChange={handleHouseholdChange}
       />
       
-      <main className="flex-1 p-4">
+      <main className="flex-1">
         {/* Calendar Controls */}
-        <div className="mb-4 flex items-center justify-between">
+        <div className="px-4 py-3 bg-white border-b border-gray-200 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">Calendar</h1>
           <Button
             onClick={() => setShowCreateEvent(true)}
@@ -103,8 +103,8 @@ export default function Calendar() {
           </Button>
         </div>
 
-        {/* Calendar Container */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        {/* Full-width Calendar Container */}
+        <div className="bg-white">
           {eventsLoading ? (
             <div className="flex items-center justify-center h-96">
               <Skeleton className="h-full w-full" />
@@ -118,13 +118,13 @@ export default function Calendar() {
               onView={setCalendarView}
               date={currentDate}
               onNavigate={setCurrentDate}
-              className="h-96 md:h-[600px]"
+              className="h-[calc(100vh-200px)]"
             />
           )}
         </div>
 
         {/* Event Legend */}
-        <div className="mt-4 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
           <h3 className="text-sm font-medium text-gray-900 mb-3">Event Types</h3>
           <div className="flex flex-wrap gap-3 text-xs">
             <div className="flex items-center">
