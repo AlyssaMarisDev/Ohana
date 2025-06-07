@@ -2,11 +2,10 @@ import { useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { EventWithDetails } from '@shared/schema';
 
 interface CalendarEvent {
-  id: number | string;
+  id: string;
   title: string;
   start: string;
   end: string;
@@ -50,10 +49,10 @@ const getEventColor = (event: EventWithDetails): string => {
     return '#059669'; // emerald-600
   }
 
-  // Color based on permission tags
+  // Check for predefined tag colors
   if (event.permissionTags && event.permissionTags.length > 0) {
     const firstTag = event.permissionTags[0].tag.toLowerCase();
-    if (PREDEFINED_TAG_COLORS[firstTag as keyof typeof PREDEFINED_TAG_COLORS]) {
+    if (firstTag in PREDEFINED_TAG_COLORS) {
       return PREDEFINED_TAG_COLORS[firstTag as keyof typeof PREDEFINED_TAG_COLORS];
     }
   }
@@ -72,364 +71,290 @@ export default function CalendarView({
   onNavigate,
   className = ''
 }: CalendarViewProps) {
-  const calendarRef = useRef<HTMLDivElement>(null);
-
-  // Transform events for React Big Calendar
+  // Transform events for FullCalendar
   const calendarEvents = useMemo((): CalendarEvent[] => {
-    return events.map(event => ({
-      id: event.id,
-      title: event.title,
-      start: new Date(event.startTime),
-      end: new Date(event.endTime),
-      resource: event,
-      permissionTags: event.permissionTags,
-      isGoogleEvent: isGoogleEvent(event),
-    }));
+    return events.map(event => {
+      const eventColor = getEventColor(event);
+      return {
+        id: event.id.toString(),
+        title: event.title,
+        start: event.startTime,
+        end: event.endTime,
+        backgroundColor: eventColor,
+        borderColor: eventColor,
+        extendedProps: {
+          resource: event,
+          isGoogleEvent: isGoogleEvent(event),
+        },
+      };
+    });
   }, [events]);
 
-
-
-  // Custom event style getter
-  const eventStyleGetter = (event: CalendarEvent) => {
-    const backgroundColor = getEventColor(event.resource!);
-    const isGoogle = event.isGoogleEvent;
-    
-    return {
-      style: {
-        backgroundColor,
-        borderColor: backgroundColor,
-        color: '#ffffff',
-        border: 'none',
-        borderRadius: '4px',
-        fontSize: '12px',
-        fontWeight: '500',
-        opacity: isGoogle ? 0.8 : 1,
-        borderLeft: isGoogle ? '3px solid #059669' : 'none',
-      }
-    };
-  };
-
-  // Custom components for better styling
-  const components = {
-    toolbar: ({ label, onNavigate }: any) => (
-      <div className="flex items-center justify-between py-3 px-4 border-b border-gray-200">
-        <button
-          onClick={() => onNavigate('PREV')}
-          className="p-2 rounded-full border border-gray-300 hover:bg-gray-50 transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5 text-gray-600" />
-        </button>
-        <h2 className="text-xl font-bold text-gray-900">{label}</h2>
-        <button
-          onClick={() => onNavigate('NEXT')}
-          className="p-2 rounded-full border border-gray-300 hover:bg-gray-50 transition-colors"
-        >
-          <ChevronRight className="w-5 h-5 text-gray-600" />
-        </button>
-      </div>
-    ),
-    event: ({ event }: { event: CalendarEvent }) => (
-      <div className="flex items-center h-full px-1">
-        <span className="truncate text-xs">
-          {event.isGoogleEvent && (
-            <span className="inline-block w-2 h-2 bg-white rounded-full mr-1 opacity-70"></span>
-          )}
-          {event.title}
-        </span>
-      </div>
-    ),
-  };
-
-  // Make day backgrounds clickable
-  const dayPropGetter = (date: Date) => ({
-    style: {
-      cursor: 'pointer',
-      minHeight: '80px',
-    },
-  });
-
-  const handleSelectEvent = (event: CalendarEvent, e: React.SyntheticEvent) => {
-    // Prevent event selection - we want day click instead
-    e.preventDefault();
-    e.stopPropagation();
-    return false;
-  };
-
-  const handleSelectSlot = (slotInfo: { start: Date; end: Date; slots: Date[]; action: string }) => {
-    // Get all events for the clicked day
-    const clickedDate = slotInfo.start;
+  // Handle day cell clicks
+  const handleDateClick = (arg: any) => {
+    const clickedDate = new Date(arg.dateStr);
     const dayEvents = events.filter(event => {
       const eventDate = new Date(event.startTime);
       return eventDate.toDateString() === clickedDate.toDateString();
     });
     
-    // Show modal with day's events
     if (onSelectSlot) {
       onSelectSlot({
-        start: slotInfo.start,
-        end: slotInfo.end,
+        start: clickedDate,
+        end: new Date(clickedDate.getTime() + 24 * 60 * 60 * 1000),
         events: dayEvents
-      } as any);
+      });
     }
   };
 
-
+  // Handle event clicks
+  const handleEventClick = (arg: any) => {
+    if (onSelectEvent && arg.event.extendedProps?.resource) {
+      onSelectEvent(arg.event.extendedProps.resource);
+    }
+  };
 
   return (
-    <div ref={calendarRef} className={`calendar-container ${className}`}>
+    <div className={`fullcalendar-container ${className}`}>
+      <FullCalendar
+        plugins={[dayGridPlugin, interactionPlugin]}
+        initialView="dayGridMonth"
+        events={calendarEvents}
+        dateClick={handleDateClick}
+        eventClick={handleEventClick}
+        headerToolbar={{
+          left: 'prev,next',
+          center: 'title',
+          right: ''
+        }}
+        height="auto"
+        dayMaxEvents={4}
+        moreLinkClick="popover"
+        eventDisplay="block"
+        displayEventTime={false}
+        dayHeaderFormat={{ weekday: 'short' }}
+        titleFormat={{ year: 'numeric', month: 'long' }}
+        aspectRatio={1.35}
+        eventClassNames={(arg) => {
+          const isGoogle = arg.event.extendedProps?.isGoogleEvent;
+          return isGoogle ? 'google-event' : 'regular-event';
+        }}
+        date={date}
+        datesSet={(arg) => {
+          if (onNavigate) {
+            onNavigate(arg.start);
+          }
+        }}
+      />
+      
       <style>{`
-        .rbc-calendar {
-          font-family: inherit;
+        .fullcalendar-container {
           background: white;
-          border-radius: 0;
+          border-radius: 8px;
           overflow: hidden;
-          box-shadow: none;
+          box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
         }
         
-        .rbc-header {
+        .fc {
+          font-family: inherit;
+        }
+        
+        .fc-header-toolbar {
+          padding: 16px 20px;
+          background: #f9fafb;
+          border-bottom: 1px solid #e5e7eb;
+          margin-bottom: 0 !important;
+        }
+        
+        .fc-toolbar-title {
+          font-size: 1.25rem;
+          font-weight: 700;
+          color: #111827;
+        }
+        
+        .fc-button {
+          background: white !important;
+          border: 1px solid #d1d5db !important;
+          border-radius: 50% !important;
+          color: #374151 !important;
+          font-weight: 500;
+          transition: all 0.2s;
+          width: 40px !important;
+          height: 40px !important;
+          padding: 0 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          margin: 0 4px !important;
+        }
+        
+        .fc-button:hover {
+          background: #f3f4f6 !important;
+          border-color: #9ca3af !important;
+        }
+        
+        .fc-button:focus {
+          outline: none !important;
+          box-shadow: 0 0 0 2px #3b82f6 !important;
+        }
+        
+        .fc-button:disabled {
+          opacity: 0.5;
+        }
+        
+        .fc-prev-button::before {
+          content: '‹';
+          font-size: 20px;
+          font-weight: bold;
+        }
+        
+        .fc-next-button::before {
+          content: '›';
+          font-size: 20px;
+          font-weight: bold;
+        }
+        
+        .fc-button-primary {
+          font-size: 0;
+        }
+        
+        .fc-daygrid-day {
+          cursor: pointer;
+          min-height: 120px;
+          transition: background-color 0.1s ease;
+          touch-action: manipulation;
+        }
+        
+        .fc-daygrid-day:hover {
+          background-color: #f8fafc;
+        }
+        
+        .fc-daygrid-day-number {
+          padding: 8px;
+          font-size: 14px;
+          font-weight: 500;
+          color: #374151;
+          text-align: center;
+          text-decoration: none;
+        }
+        
+        .fc-day-today {
+          background-color: #dbeafe !important;
+        }
+        
+        .fc-day-today .fc-daygrid-day-number {
+          color: #1d4ed8;
+          font-weight: 700;
+        }
+        
+        .fc-day-other .fc-daygrid-day-number {
+          color: #9ca3af;
+        }
+        
+        .fc-col-header-cell {
           background: #f9fafb;
           border-bottom: 1px solid #e5e7eb;
           padding: 12px 8px;
           font-weight: 600;
           color: #374151;
           font-size: 14px;
-        }
-        
-        .rbc-month-view {
-          border: none;
-        }
-        
-        .rbc-date-cell {
-          padding: 2px 8px 2px 8px;
-          text-align: right;
-          color: #374151;
-          font-size: 12px;
-          cursor: pointer;
-          touch-action: manipulation;
-          -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
-          user-select: none;
-          -webkit-user-select: none;
-        }
-        
-        .rbc-date-cell:active {
-          background-color: #f3f4f6;
-        }
-        
-        .rbc-date-cell.rbc-off-range {
-          color: #9ca3af;
-          background: #f9fafb;
-        }
-        
-        .rbc-today {
-          background: #dbeafe;
-        }
-        
-        .rbc-event {
-          border-radius: 3px;
-          padding: 1px 3px;
-          margin: 1px 0;
-          height: 18px;
-          line-height: 16px;
-          font-size: 10px;
-          pointer-events: none;
-          cursor: default;
-        }
-        
-        .rbc-event:first-of-type {
-          margin-top: 1px;
-        }
-        
-        .rbc-selected {
-          background: #3b82f6 !important;
-        }
-        
-        .rbc-toolbar {
-          padding: 12px 0;
-          border-bottom: 1px solid #e5e7eb;
-          background: white;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        
-        .rbc-toolbar .rbc-btn-group:first-child {
-          order: 1;
-        }
-        
-        .rbc-toolbar .rbc-toolbar-label {
-          order: 2;
-          flex: 1;
           text-align: center;
         }
         
-        .rbc-toolbar .rbc-btn-group:last-child {
-          order: 3;
-        }
-        
-        .rbc-toolbar button {
-          background: white;
-          border: 1px solid #d1d5db;
-          border-radius: 50%;
-          padding: 8px;
-          color: #374151;
-          font-weight: 500;
-          transition: all 0.2s;
-          width: 36px;
-          height: 36px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        
-        .rbc-toolbar button:hover {
-          background: #f3f4f6;
-          border-color: #9ca3af;
-        }
-        
-        .rbc-toolbar button.rbc-active {
-          background: #3b82f6;
-          border-color: #3b82f6;
-          color: white;
-        }
-        
-        .rbc-btn-group button:first-child {
-          border-radius: 50%;
-        }
-        
-        .rbc-btn-group button:last-child {
-          border-radius: 50%;
-        }
-        
-        .rbc-btn-group button:not(:first-child):not(:last-child) {
-          border-radius: 50%;
-        }
-        
-        .rbc-toolbar-label {
-          font-size: 20px;
-          font-weight: 700;
-          color: #111827;
-        }
-        
-        /* Hide navigation buttons from toolbar, we'll add custom ones */
-        .rbc-toolbar .rbc-btn-group:first-child button {
-          display: none;
-        }
-        
-        .rbc-month-row {
-          border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .rbc-day-bg {
-          border-right: 1px solid #e5e7eb;
-        }
-        
-        .rbc-day-bg:last-child {
-          border-right: none;
-        }
-        
-        .rbc-time-view {
-          border: 1px solid #e5e7eb;
-        }
-        
-        .rbc-time-header {
-          border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .rbc-time-content {
-          border-top: 1px solid #e5e7eb;
-        }
-        
-        .rbc-timeslot-group {
-          border-bottom: 1px solid #f3f4f6;
-        }
-        
-        .rbc-time-slot {
-          border-top: 1px solid #f3f4f6;
-        }
-        
-        .rbc-current-time-indicator {
-          background-color: #ef4444;
-          height: 2px;
-          z-index: 1;
-        }
-        
-        .rbc-agenda-view {
-          border: 1px solid #e5e7eb;
-        }
-        
-        .rbc-agenda-view table {
-          width: 100%;
-        }
-        
-        .rbc-agenda-view .rbc-agenda-date-cell,
-        .rbc-agenda-view .rbc-agenda-time-cell {
-          background: #f9fafb;
-          border-bottom: 1px solid #e5e7eb;
-          padding: 12px;
-          font-weight: 500;
-        }
-        
-        .rbc-agenda-view .rbc-agenda-event-cell {
-          padding: 12px;
-          border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .rbc-show-more {
-          background: #f3f4f6;
-          color: #374151;
-          border: 1px solid #d1d5db;
-          border-radius: 4px;
-          padding: 2px 6px;
-          font-size: 11px;
-          font-weight: 500;
+        .fc-event {
+          border: none !important;
+          border-radius: 4px !important;
+          font-size: 12px !important;
+          font-weight: 500 !important;
+          color: white !important;
+          padding: 2px 6px !important;
+          margin: 1px 2px !important;
+          height: 20px !important;
+          line-height: 16px !important;
           cursor: pointer;
         }
         
-        .rbc-show-more:hover {
-          background: #e5e7eb;
+        .fc-event:hover {
+          opacity: 0.9;
+        }
+        
+        .fc-event-title {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        
+        .google-event {
+          opacity: 0.85;
+          position: relative;
+        }
+        
+        .google-event::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 3px;
+          background: #059669;
+          border-radius: 4px 0 0 4px;
+        }
+        
+        .fc-more-link {
+          background: #f3f4f6 !important;
+          color: #374151 !important;
+          border: 1px solid #d1d5db !important;
+          border-radius: 4px !important;
+          padding: 2px 6px !important;
+          font-size: 11px !important;
+          font-weight: 500 !important;
+          text-decoration: none !important;
+          margin: 1px 2px !important;
+          display: inline-block;
+        }
+        
+        .fc-more-link:hover {
+          background: #e5e7eb !important;
+        }
+        
+        .fc-daygrid-event-harness {
+          margin-bottom: 1px;
+        }
+        
+        .fc-daygrid-more-link {
+          text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+          .fc-daygrid-day {
+            min-height: 80px;
+          }
+          
+          .fc-event {
+            font-size: 10px !important;
+            height: 18px !important;
+            line-height: 14px !important;
+          }
+          
+          .fc-daygrid-day-number {
+            font-size: 12px;
+            padding: 4px;
+          }
+          
+          .fc-header-toolbar {
+            padding: 12px 16px;
+          }
+          
+          .fc-toolbar-title {
+            font-size: 1.1rem;
+          }
+          
+          .fc-button {
+            width: 36px !important;
+            height: 36px !important;
+          }
         }
       `}</style>
-      
-      <Calendar
-        localizer={localizer}
-        events={calendarEvents}
-        startAccessor="start"
-        endAccessor="end"
-        style={{ height: 600 }}
-        view={view as any}
-        views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
-        date={date}
-        onNavigate={onNavigate}
-        onView={() => {}} // Disable view switching
-        onSelectEvent={handleSelectEvent}
-        onSelectSlot={handleSelectSlot}
-        selectable
-        eventPropGetter={eventStyleGetter}
-        dayPropGetter={dayPropGetter}
-        components={components}
-        step={30}
-        showMultiDayTimes
-        popup
-
-        formats={{
-          timeGutterFormat: 'h:mm A',
-          eventTimeRangeFormat: ({ start, end }) => 
-            `${moment(start).format('h:mm A')} - ${moment(end).format('h:mm A')}`,
-          agendaTimeFormat: 'h:mm A',
-          agendaDateFormat: 'ddd MMM D',
-        }}
-        messages={{
-          today: 'Today',
-          previous: 'Back',
-          next: 'Next',
-          month: 'Month',
-          week: 'Week',
-          day: 'Day',
-          agenda: 'Agenda',
-          showMore: total => `+${total} more`,
-          noEventsInRange: 'No events in this range.',
-        }}
-      />
     </div>
   );
 }
