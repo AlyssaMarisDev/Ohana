@@ -92,10 +92,15 @@ export default function CalendarView({
 
   // Handle day cell clicks
   const handleDateClick = (arg: any) => {
-    const clickedDate = new Date(arg.dateStr);
+    // Use the date string and create a proper local date
+    const clickedDate = new Date(arg.dateStr + 'T00:00:00');
     const dayEvents = events.filter(event => {
       const eventDate = new Date(event.startTime);
-      return eventDate.toDateString() === clickedDate.toDateString();
+      // Compare dates in the same timezone
+      const eventDateStr = eventDate.getFullYear() + '-' + 
+        String(eventDate.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(eventDate.getDate()).padStart(2, '0');
+      return eventDateStr === arg.dateStr;
     });
     
     if (onSelectSlot) {
@@ -115,15 +120,22 @@ export default function CalendarView({
     
     // Get the date from the event and trigger day click
     const eventDate = new Date(arg.event.start);
+    const dateStr = eventDate.getFullYear() + '-' + 
+      String(eventDate.getMonth() + 1).padStart(2, '0') + '-' + 
+      String(eventDate.getDate()).padStart(2, '0');
+    
     const dayEvents = events.filter(event => {
       const eventEventDate = new Date(event.startTime);
-      return eventEventDate.toDateString() === eventDate.toDateString();
+      const eventDateStr = eventEventDate.getFullYear() + '-' + 
+        String(eventEventDate.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(eventEventDate.getDate()).padStart(2, '0');
+      return eventDateStr === dateStr;
     });
     
     if (onSelectSlot) {
       onSelectSlot({
-        start: eventDate,
-        end: new Date(eventDate.getTime() + 24 * 60 * 60 * 1000),
+        start: new Date(dateStr + 'T00:00:00'),
+        end: new Date(dateStr + 'T23:59:59'),
         events: dayEvents
       });
     }
