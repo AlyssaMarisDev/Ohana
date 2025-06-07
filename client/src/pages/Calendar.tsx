@@ -58,9 +58,16 @@ export default function Calendar() {
     }
   };
 
-  const handleSelectSlot = (slotInfo: { start: Date; end: Date }) => {
-    // Open create event modal with pre-filled date/time
-    setShowCreateEvent(true);
+  const handleSelectSlot = (slotInfo: { start: Date; end: Date; events?: EventWithDetails[] }) => {
+    if (slotInfo.events) {
+      // Day click - show events for the day
+      setSelectedDate(slotInfo.start);
+      setDayEvents(slotInfo.events);
+      setShowDayEvents(true);
+    } else {
+      // Time slot selection - open create event modal
+      setShowCreateEvent(true);
+    }
   };
 
   const handleHouseholdChange = (householdId: number | "all") => {
@@ -178,6 +185,13 @@ export default function Calendar() {
           currentHousehold={currentHousehold || null}
         />
       )}
+
+      <DayEventsModal
+        open={showDayEvents}
+        onOpenChange={setShowDayEvents}
+        date={selectedDate}
+        events={dayEvents}
+      />
 
       <BottomNavigation />
     </div>
