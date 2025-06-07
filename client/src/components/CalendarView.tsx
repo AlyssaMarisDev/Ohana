@@ -209,38 +209,43 @@ export default function CalendarView({
         }
       }
     } else {
-      // Fallback: if no date cell found, try to determine which cell based on click position
+      // Fallback: if no date cell found, try to find it through the event target chain
       const monthView = target.closest('.rbc-month-view');
       if (monthView) {
-        const rect = (e as any).target.getBoundingClientRect();
-        const clickX = (e as any).clientX || (e as any).touches?.[0]?.clientX;
-        const clickY = (e as any).clientY || (e as any).touches?.[0]?.clientY;
+        // Try to find any date cell in the vicinity by checking parent elements
+        let currentElement = target;
+        let attempts = 0;
         
-        // Find the date cell at the click coordinates
-        const elementAtPoint = document.elementFromPoint(clickX, clickY);
-        const closestDateCell = elementAtPoint?.closest('.rbc-date-cell');
-        
-        if (closestDateCell) {
-          const dayButton = closestDateCell.querySelector('button');
-          if (dayButton && dayButton.textContent) {
-            const dayNumber = parseInt(dayButton.textContent);
-            const currentMonth = new Date().getMonth();
-            const currentYear = new Date().getFullYear();
-            const clickedDate = new Date(currentYear, currentMonth, dayNumber);
-            
-            const dayEvents = events.filter(event => {
-              const eventDate = new Date(event.startTime);
-              return eventDate.toDateString() === clickedDate.toDateString();
-            });
-            
-            if (onSelectSlot) {
-              onSelectSlot({
-                start: clickedDate,
-                end: new Date(clickedDate.getTime() + 24 * 60 * 60 * 1000),
-                events: dayEvents
-              } as any);
+        while (currentElement && attempts < 10) {
+          const nearbyDateCell = currentElement.querySelector?.('.rbc-date-cell') || 
+                                 currentElement.parentElement?.querySelector?.('.rbc-date-cell');
+          
+          if (nearbyDateCell) {
+            const dayButton = nearbyDateCell.querySelector('button');
+            if (dayButton && dayButton.textContent) {
+              const dayNumber = parseInt(dayButton.textContent);
+              const currentMonth = new Date().getMonth();
+              const currentYear = new Date().getFullYear();
+              const clickedDate = new Date(currentYear, currentMonth, dayNumber);
+              
+              const dayEvents = events.filter(event => {
+                const eventDate = new Date(event.startTime);
+                return eventDate.toDateString() === clickedDate.toDateString();
+              });
+              
+              if (onSelectSlot) {
+                onSelectSlot({
+                  start: clickedDate,
+                  end: new Date(clickedDate.getTime() + 24 * 60 * 60 * 1000),
+                  events: dayEvents
+                } as any);
+              }
+              break;
             }
           }
+          
+          currentElement = currentElement.parentElement;
+          attempts++;
         }
       }
     }
