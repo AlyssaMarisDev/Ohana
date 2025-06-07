@@ -167,40 +167,25 @@ export default function CalendarView({
   const handleCalendarClick = (e: React.MouseEvent | React.TouchEvent) => {
     const target = e.target as HTMLElement;
     
-    // Look for the day cell container, either rbc-date-cell or the row content
-    const dateCell = target.closest('.rbc-date-cell') || 
-                     target.closest('.rbc-row-content')?.querySelector('.rbc-date-cell');
+    // First, look for the specific date cell that was clicked
+    const dateCell = target.closest('.rbc-date-cell');
     
-    // Also check if we clicked directly on a calendar row
-    const monthRow = target.closest('.rbc-month-row');
-    
-    if (dateCell || monthRow) {
+    if (dateCell) {
+      // Look for the day number specifically within this date cell only
       let dayNumber: number | null = null;
-      let clickedElement = dateCell || monthRow;
       
-      // Try multiple methods to find the day number
-      if (clickedElement) {
-        // Method 1: Look for button with day number
-        const dayButton = clickedElement.querySelector('button');
-        if (dayButton && dayButton.textContent) {
-          dayNumber = parseInt(dayButton.textContent);
-        }
-        
-        // Method 2: Look for any element with day number text
-        if (!dayNumber) {
-          const allElements = clickedElement.querySelectorAll('*');
-          for (let el of Array.from(allElements)) {
-            const text = el.textContent?.trim();
-            if (text && /^\d{1,2}$/.test(text)) {
-              dayNumber = parseInt(text);
-              break;
-            }
-          }
-        }
-        
-        // Method 3: Check the clicked target itself
-        if (!dayNumber && target.textContent && /^\d{1,2}$/.test(target.textContent.trim())) {
-          dayNumber = parseInt(target.textContent.trim());
+      // Method 1: Look for button with day number within this specific cell
+      const dayButton = dateCell.querySelector('button');
+      if (dayButton && dayButton.textContent) {
+        dayNumber = parseInt(dayButton.textContent);
+      }
+      
+      // Method 2: If no button, look for day number text within this cell
+      if (!dayNumber) {
+        const cellText = dateCell.textContent?.trim();
+        const dayMatch = cellText?.match(/^\d{1,2}/);
+        if (dayMatch) {
+          dayNumber = parseInt(dayMatch[0]);
         }
       }
       
@@ -221,6 +206,41 @@ export default function CalendarView({
             end: new Date(clickedDate.getTime() + 24 * 60 * 60 * 1000),
             events: dayEvents
           } as any);
+        }
+      }
+    } else {
+      // Fallback: if no date cell found, try to determine which cell based on click position
+      const monthView = target.closest('.rbc-month-view');
+      if (monthView) {
+        const rect = (e as any).target.getBoundingClientRect();
+        const clickX = (e as any).clientX || (e as any).touches?.[0]?.clientX;
+        const clickY = (e as any).clientY || (e as any).touches?.[0]?.clientY;
+        
+        // Find the date cell at the click coordinates
+        const elementAtPoint = document.elementFromPoint(clickX, clickY);
+        const closestDateCell = elementAtPoint?.closest('.rbc-date-cell');
+        
+        if (closestDateCell) {
+          const dayButton = closestDateCell.querySelector('button');
+          if (dayButton && dayButton.textContent) {
+            const dayNumber = parseInt(dayButton.textContent);
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            const clickedDate = new Date(currentYear, currentMonth, dayNumber);
+            
+            const dayEvents = events.filter(event => {
+              const eventDate = new Date(event.startTime);
+              return eventDate.toDateString() === clickedDate.toDateString();
+            });
+            
+            if (onSelectSlot) {
+              onSelectSlot({
+                start: clickedDate,
+                end: new Date(clickedDate.getTime() + 24 * 60 * 60 * 1000),
+                events: dayEvents
+              } as any);
+            }
+          }
         }
       }
     }
