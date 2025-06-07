@@ -1,8 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EventWithDetails } from "@shared/schema";
 import { format } from "date-fns";
-import { Calendar, Clock, User, Tag } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Calendar } from "lucide-react";
+import EventCard from "./EventCard";
 
 interface DayEventsModalProps {
   open: boolean;
@@ -11,24 +11,7 @@ interface DayEventsModalProps {
   events: EventWithDetails[];
 }
 
-const PREDEFINED_TAG_COLORS = {
-  adults: '#ef4444',     // red
-  family: '#3b82f6',     // blue
-  kids: '#22c55e',       // green
-  personal: '#f59e0b',   // amber
-  work: '#8b5cf6',       // violet
-  health: '#ec4899',     // pink
-  social: '#06b6d4',     // cyan
-  home: '#84cc16',       // lime
-};
 
-const getEventColor = (event: EventWithDetails): string => {
-  if (event.permissionTags && event.permissionTags.length > 0) {
-    const firstTag = event.permissionTags[0].tag.toLowerCase();
-    return PREDEFINED_TAG_COLORS[firstTag as keyof typeof PREDEFINED_TAG_COLORS] || '#6b7280';
-  }
-  return '#6b7280';
-};
 
 export default function DayEventsModal({ open, onOpenChange, date, events }: DayEventsModalProps) {
   if (!date) return null;
@@ -55,53 +38,11 @@ export default function DayEventsModal({ open, onOpenChange, date, events }: Day
             </div>
           ) : (
             sortedEvents.map((event) => (
-              <div
-                key={event.id}
-                className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                style={{ borderLeftColor: getEventColor(event), borderLeftWidth: '4px' }}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold text-lg">{event.title}</h3>
-                  <div className="flex items-center gap-1 text-sm text-gray-600">
-                    <Clock className="w-4 h-4" />
-                    {format(new Date(event.startTime), "h:mm a")} - {format(new Date(event.endTime), "h:mm a")}
-                  </div>
-                </div>
-                
-                {event.description && (
-                  <p className="text-gray-700 mb-3">{event.description}</p>
-                )}
-                
-                <div className="flex items-center gap-4 text-sm text-gray-600">
-                  {event.assignee && (
-                    <div className="flex items-center gap-1">
-                      <User className="w-4 h-4" />
-                      <span>Assigned to {event.assignee.firstName}</span>
-                    </div>
-                  )}
-                  
-                  {event.permissionTags && event.permissionTags.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <Tag className="w-4 h-4" />
-                      <div className="flex gap-1">
-                        {event.permissionTags.map((tag, index) => (
-                          <Badge 
-                            key={index} 
-                            variant="secondary"
-                            style={{ 
-                              backgroundColor: getEventColor(event) + '20',
-                              color: getEventColor(event),
-                              borderColor: getEventColor(event) + '40'
-                            }}
-                          >
-                            {tag.tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <EventCard 
+                key={event.id} 
+                event={event} 
+                compact={false}
+              />
             ))
           )}
         </div>

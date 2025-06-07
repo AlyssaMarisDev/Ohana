@@ -7,6 +7,7 @@ import AppHeader from "@/components/AppHeader";
 import BottomNavigation from "@/components/BottomNavigation";
 import CreateEventModal from "@/components/CreateEventModal";
 import CreateTaskModal from "@/components/CreateTaskModal";
+import EventCard from "@/components/EventCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -135,27 +136,11 @@ export default function Dashboard() {
                 </div>
               ) : todayEvents && todayEvents.length > 0 ? (
                 todayEvents.map((event) => (
-                  <div key={event.id} className="flex items-start space-x-3 p-3 border border-gray-100 rounded-lg">
-                    <div className="w-1 h-12 bg-primary rounded-full"></div>
-                    <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">{event.title}</h3>
-                      <p className="text-sm text-gray-600">
-                        {format(new Date(event.startTime), "h:mm a")} - {format(new Date(event.endTime), "h:mm a")}
-                      </p>
-                      <div className="flex items-center mt-2 space-x-2">
-                        {event.category && (
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md font-medium">
-                            {event.category}
-                          </span>
-                        )}
-                        {event.assignee && (
-                          <span className="text-xs text-gray-600">
-                            {event.assignee.firstName || event.assignee.email}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <EventCard 
+                    key={event.id} 
+                    event={event} 
+                    compact={true}
+                  />
                 ))
               ) : (
                 <div className="text-center py-8 text-gray-500">
