@@ -143,14 +143,18 @@ export default function CalendarView({
   };
 
   const handleSelectSlot = (slotInfo: { start: Date; end: Date; slots: Date[]; action: string }) => {
+    console.log('Calendar slot clicked:', slotInfo);
+    
     // Only handle day clicks, not time slot selections
-    if (slotInfo.action === 'click') {
+    if (slotInfo.action === 'click' || slotInfo.action === 'select') {
       // Get all events for the clicked day
       const clickedDate = slotInfo.start;
       const dayEvents = events.filter(event => {
         const eventDate = new Date(event.startTime);
         return eventDate.toDateString() === clickedDate.toDateString();
       });
+      
+      console.log('Day events found:', dayEvents);
       
       // Show modal with day's events
       if (onSelectSlot) {
@@ -187,11 +191,36 @@ export default function CalendarView({
           border: none;
         }
         
+        .rbc-month-row {
+          min-height: 90px;
+        }
+        
+        .rbc-row-content {
+          position: relative;
+        }
+        
+        .rbc-date-cell,
+        .rbc-month-view .rbc-date-cell {
+          position: relative;
+          min-height: 90px;
+          border-right: 1px solid #e5e7eb;
+          border-bottom: 1px solid #e5e7eb;
+        }
+        
         .rbc-date-cell {
           padding: 2px 8px 2px 8px;
           text-align: right;
           color: #374151;
           font-size: 12px;
+          cursor: pointer;
+          touch-action: manipulation;
+          -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+          user-select: none;
+          -webkit-user-select: none;
+        }
+        
+        .rbc-date-cell:active {
+          background-color: #f3f4f6;
         }
         
         .rbc-date-cell.rbc-off-range {
