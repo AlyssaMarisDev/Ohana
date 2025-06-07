@@ -106,7 +106,7 @@ export default function CalendarView({
 
   // Custom components for better styling
   const components = {
-    toolbar: ({ label, onNavigate }: { label: string; onNavigate: (action: string) => void }) => (
+    toolbar: ({ label, onNavigate }: any) => (
       <div className="flex items-center justify-between py-3 px-4 border-b border-gray-200">
         <button
           onClick={() => onNavigate('PREV')}
@@ -175,7 +175,7 @@ export default function CalendarView({
         }
         
         .rbc-date-cell {
-          padding: 8px;
+          padding: 4px 8px 4px 8px;
           text-align: right;
           color: #374151;
         }
@@ -192,7 +192,11 @@ export default function CalendarView({
         .rbc-event {
           border-radius: 4px;
           padding: 2px 4px;
-          margin: 1px 0;
+          margin: 4px 0 1px 0;
+        }
+        
+        .rbc-event:first-of-type {
+          margin-top: 4px;
         }
         
         .rbc-selected {
