@@ -107,10 +107,25 @@ export default function CalendarView({
     }
   };
 
-  // Handle event clicks
+  // Handle event clicks - prevent individual event clicks, redirect to day click
   const handleEventClick = (arg: any) => {
-    if (onSelectEvent && arg.event.extendedProps?.resource) {
-      onSelectEvent(arg.event.extendedProps.resource);
+    // Prevent individual event selection, instead trigger day click
+    arg.jsEvent.preventDefault();
+    arg.jsEvent.stopPropagation();
+    
+    // Get the date from the event and trigger day click
+    const eventDate = new Date(arg.event.start);
+    const dayEvents = events.filter(event => {
+      const eventEventDate = new Date(event.startTime);
+      return eventEventDate.toDateString() === eventDate.toDateString();
+    });
+    
+    if (onSelectSlot) {
+      onSelectSlot({
+        start: eventDate,
+        end: new Date(eventDate.getTime() + 24 * 60 * 60 * 1000),
+        events: dayEvents
+      });
     }
   };
 
@@ -139,7 +154,7 @@ export default function CalendarView({
           const isGoogle = arg.event.extendedProps?.isGoogleEvent;
           return isGoogle ? 'google-event' : 'regular-event';
         }}
-        date={date}
+        initialDate={date}
         datesSet={(arg) => {
           if (onNavigate) {
             onNavigate(arg.start);
@@ -272,6 +287,16 @@ export default function CalendarView({
           height: 20px !important;
           line-height: 16px !important;
           cursor: pointer;
+          pointer-events: none;
+        }
+        
+        .fc-daygrid-day-frame {
+          position: relative;
+          z-index: 1;
+        }
+        
+        .fc-daygrid-day-events {
+          pointer-events: none;
         }
         
         .fc-event:hover {
