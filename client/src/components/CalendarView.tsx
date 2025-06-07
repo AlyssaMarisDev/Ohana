@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Calendar, momentLocalizer, Views, Event as BigCalendarEvent } from 'react-big-calendar';
 import moment from 'moment';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import type { EventWithDetails } from '@shared/schema';
 
@@ -105,6 +106,23 @@ export default function CalendarView({
 
   // Custom components for better styling
   const components = {
+    toolbar: ({ label, onNavigate }: { label: string; onNavigate: (action: string) => void }) => (
+      <div className="flex items-center justify-between py-3 px-4 border-b border-gray-200">
+        <button
+          onClick={() => onNavigate('PREV')}
+          className="p-2 rounded-full border border-gray-300 hover:bg-gray-50 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5 text-gray-600" />
+        </button>
+        <h2 className="text-xl font-bold text-gray-900">{label}</h2>
+        <button
+          onClick={() => onNavigate('NEXT')}
+          className="p-2 rounded-full border border-gray-300 hover:bg-gray-50 transition-colors"
+        >
+          <ChevronRight className="w-5 h-5 text-gray-600" />
+        </button>
+      </div>
+    ),
     event: ({ event }: { event: CalendarEvent }) => (
       <div className="flex items-center h-full px-1">
         <span className="truncate text-xs">
@@ -182,19 +200,41 @@ export default function CalendarView({
         }
         
         .rbc-toolbar {
-          padding: 16px;
+          padding: 12px 0;
           border-bottom: 1px solid #e5e7eb;
           background: white;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .rbc-toolbar .rbc-btn-group:first-child {
+          order: 1;
+        }
+        
+        .rbc-toolbar .rbc-toolbar-label {
+          order: 2;
+          flex: 1;
+          text-align: center;
+        }
+        
+        .rbc-toolbar .rbc-btn-group:last-child {
+          order: 3;
         }
         
         .rbc-toolbar button {
           background: white;
           border: 1px solid #d1d5db;
-          border-radius: 6px;
-          padding: 8px 12px;
+          border-radius: 50%;
+          padding: 8px;
           color: #374151;
           font-weight: 500;
           transition: all 0.2s;
+          width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         
         .rbc-toolbar button:hover {
@@ -209,25 +249,26 @@ export default function CalendarView({
         }
         
         .rbc-btn-group button:first-child {
-          border-top-right-radius: 0;
-          border-bottom-right-radius: 0;
-          border-right: none;
+          border-radius: 50%;
         }
         
         .rbc-btn-group button:last-child {
-          border-top-left-radius: 0;
-          border-bottom-left-radius: 0;
+          border-radius: 50%;
         }
         
         .rbc-btn-group button:not(:first-child):not(:last-child) {
-          border-radius: 0;
-          border-right: none;
+          border-radius: 50%;
         }
         
         .rbc-toolbar-label {
-          font-size: 18px;
-          font-weight: 600;
+          font-size: 20px;
+          font-weight: 700;
           color: #111827;
+        }
+        
+        /* Hide navigation buttons from toolbar, we'll add custom ones */
+        .rbc-toolbar .rbc-btn-group:first-child button {
+          display: none;
         }
         
         .rbc-month-row {
