@@ -104,7 +104,7 @@ export default function Calendar() {
         </div>
 
         {/* Full-width Calendar Container */}
-        <div className="bg-white">
+        <div className="bg-white px-2">
           {eventsLoading ? (
             <div className="flex items-center justify-center h-96">
               <Skeleton className="h-full w-full" />
