@@ -178,6 +178,7 @@ export default function CalendarView({
           padding: 2px 8px 2px 8px;
           text-align: right;
           color: #374151;
+          font-size: 12px;
         }
         
         .rbc-date-cell.rbc-off-range {
